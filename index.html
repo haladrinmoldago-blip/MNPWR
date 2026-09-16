@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>J82 Daily Manpower Reporting</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padding:12px;font-size:15px}
+.container{max-width:860px}
+.page-head{border-bottom:2px solid #444;padding-bottom:10px;margin-bottom:18px}
+.page-head h1{font-size:20px;font-weight:600;margin:0}
+.page-head .sub{font-size:13px;color:#6c757d;margin-top:2px}
+.panel{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:14px;margin-bottom:14px}
+.panel h2{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#495057;margin:0 0 10px}
+.form-label{font-size:12px;color:#6c757d;margin-bottom:2px}
+.form-control,.form-select{font-size:15px;border-radius:3px}
+.btn{border-radius:3px;font-weight:500}
+.act-row{border:1px solid #e0e0e0;border-radius:3px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.act-row.editing{border-color:#0d6efd;background:#f2f7ff}
+.act-main{font-weight:600;font-size:15px}
+.act-sub{font-size:13px;color:#6c757d;margin-top:2px}
+.act-nums{font-size:13px;color:#212529;margin-top:4px}
+.act-btns{margin-top:8px}
+.act-btns .btn{font-size:12px;padding:3px 10px;margin-right:6px}
+.kpi{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:10px;text-align:center}
+.kpi .lbl{font-size:12px;color:#6c757d}
+.kpi .val{font-size:22px;font-weight:600;margin-top:2px}
+.kpi.neg .val{color:#b02a37}
+.prev-item{border-bottom:1px solid #eee;padding:6px 0;font-size:13px}
+.prev-item:last-child{border-bottom:none}
+.empty{color:#adb5bd;font-size:13px;font-style:italic}
+.footer{text-align:center;color:#adb5bd;font-size:12px;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-head">
+    <h1 id="appTitle">J82 Daily Manpower Reporting</h1>
+    <div class="sub">Where &middot; What &middot; How Many</div>
+  </div>
+
+  <div id="storageNotice" class="alert alert-warning py-2 d-none" role="alert" style="font-size:13px">
+    Auto-save isn't available in this window, so entries won't be saved if you close it. Open the page directly in your browser for auto-save to work.
+  </div>
+
+  <div class="panel">
+    <h2>Report Details</h2>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label" for="date">Date</label>
+        <input id="date" type="date" class="form-control">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="foreman">Foreman</label>
+        <input id="foreman" class="form-control" placeholder="Name">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="attendance">Total Manpower</label>
+        <input id="attendance" type="number" min="0" class="form-control" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 id="formHeading">Add Activity</h2>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label" for="discipline">Discipline</label>
+        <select id="discipline" class="form-select">
+          <option value="" disabled selected>Select</option>
+          <option>HVAC</option>
+          <option>Plumbing</option>
+          <option>Electrical</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="tower">Tower</label>
+        <select id="tower" class="form-select">
+          <option value="" disabled selected>Select</option>
+          <option>Tower A</option>
+          <option>Tower B</option>
+          <option>Tower C</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="level">Level</label>
+        <select id="level" class="form-select">
+          <option value="" disabled selected>Select</option>
+          <option>BF</option><option>GF</option>
+          <option>L1</option><option>L2</option><option>L3</option><option>L4</option>
+          <option>L5</option><option>L6</option><option>L7</option><option>L8</option>
+          <option>L9</option><option>L10</option><option>L11</option><option>L12</option>
+          <option>L13</option><option>L14</option><option>L15</option><option>L16</option>
+          <option>L17</option><option>L18</option><option>L19</option><option>RF</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="areaType">Area</label>
+        <select id="areaType" class="form-select">
+          <option value="" disabled selected>Select</option>
+          <option>Flat</option>
+          <option>Staircase</option>
+          <option>Corridor</option>
+          <option>Common Area</option>
+          <option>External</option>
+          <option>Service Room</option>
+          <option>Others</option>
+        </select>
+      </div>
+      <div class="col-md-4" id="areaDetailWrap" style="display:none">
+        <label class="form-label" for="areaDetail" id="areaDetailLabel">Detail</label>
+        <input id="areaDetail" class="form-control" placeholder="">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="activity">Activity</label>
+        <input id="activity" class="form-control" placeholder="e.g. Plenum Box Fixing">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="workers">Labours</label>
+        <input id="workers" type="number" min="1" class="form-control" placeholder="0">
+      </div>
+    </div>
+    <div class="mt-3">
+      <button id="addBtn" class="btn btn-primary">Add Activity</button>
+      <button id="cancelEditBtn" class="btn btn-outline-secondary d-none">Cancel</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Activities (<span id="activityCount">0</span>)</h2>
+    <div id="activityList"></div>
+  </div>
+
+  <div class="row g-2 mb-3">
+    <div class="col-4"><div class="kpi"><div class="lbl">Manpower MH</div><div class="val" id="attendanceMH">0</div></div></div>
+    <div class="col-4"><div class="kpi"><div class="lbl">Allocated MH</div><div class="val" id="allocatedMH">0</div></div></div>
+    <div class="col-4"><div class="kpi" id="balanceKpi"><div class="lbl">Balance MH</div><div class="val" id="balanceMH">0</div></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Day Summary</h2>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="form-label" for="cih">Charge in Hand</label>
+        <input id="cih" type="number" min="0" class="form-control" placeholder="0">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="absent">Total Absent</label>
+        <input id="absent" type="number" min="0" class="form-control" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Report Preview</h2>
+    <div id="reportPreview"></div>
+  </div>
+
+  <div class="d-grid gap-2">
+    <button id="submitBtn" class="btn btn-primary">Submit Report</button>
+    <button id="shareBtn" class="btn btn-outline-secondary">Share Report</button>
+    <button id="csvBtn" class="btn btn-outline-secondary">Export CSV</button>
+    <button id="clearBtn" class="btn btn-outline-danger">Clear Draft</button>
+  </div>
+
+  <div class="footer" id="appFooter">J82 Hills Edge Daily Reporting</div>
+</div>
+
+<script>
+// ============================================================
+// CLONING THIS APP FOR A NEW PROJECT/SITE?
+// Change only these lines. SHEET_WEBAPP_URL must point to that
+// project's OWN Google Sheet, not this one.
+// ============================================================
+const PROJECT_CODE='J82';
+const SITE_NAME='Hills Edge';
+const SHEET_WEBAPP_URL='https://script.google.com/macros/s/AKfycbwjABmd9F5fHAyGgnGzuJdI6vHSWotHwbI8-h5v-R_xcTeJ3Lgbvvs0rWmhoo0TnVZt2A/exec';
+
+const KEY='J82_V7';
+const rows=[];
+let editingId=null;
+
+const d=document.getElementById('date');
+const f=document.getElementById('foreman');
+const a=document.getElementById('attendance');
+const cih=document.getElementById('cih');
+const absent=document.getElementById('absent');
+const areaType=document.getElementById('areaType');
+const areaDetail=document.getElementById('areaDetail');
+const areaDetailWrap=document.getElementById('areaDetailWrap');
+const areaDetailLabel=document.getElementById('areaDetailLabel');
+
+d.value=new Date().toISOString().split('T')[0];
+document.title=PROJECT_CODE+' Daily Manpower Reporting';
+document.getElementById('appTitle').textContent=PROJECT_CODE+' Daily Manpower Reporting';
+document.getElementById('appFooter').textContent=PROJECT_CODE+' '+SITE_NAME+' Daily Reporting';
+
+// Area types that need an extra detail value, with the label to show
+const AREA_DETAIL_CONFIG={
+  'Flat':{label:'Flat Number',placeholder:'e.g. 205'},
+  'Staircase':{label:'Staircase Number',placeholder:'e.g. 2'},
+  'Others':{label:'Specify Area',placeholder:'Type the area'}
+};
+
+function updateAreaDetailField(){
+  const cfg=AREA_DETAIL_CONFIG[areaType.value];
+  if(cfg){
+    areaDetailWrap.style.display='';
+    areaDetailLabel.textContent=cfg.label;
+    areaDetail.placeholder=cfg.placeholder;
+  }else{
+    areaDetailWrap.style.display='none';
+    areaDetail.value='';
+  }
+}
+
+function areaLabel(type,detail){
+  if(type==='Others') return detail||'Others';
+  if(AREA_DETAIL_CONFIG[type]) return type+' '+detail;
+  return type;
+}
+
+function storageSupported(){
+  try{
+    const t='__J82_STORAGE_TEST__';
+    window.localStorage.setItem(t,'1');
+    window.localStorage.removeItem(t);
+    return true;
+  }catch(e){return false;}
+}
+const hasStorage=storageSupported();
+if(!hasStorage){document.getElementById('storageNotice').classList.remove('d-none');}
+
+function save(){
+  if(!hasStorage) return;
+  try{
+    localStorage.setItem(KEY,JSON.stringify({
+      rows,date:d.value,foreman:f.value,attendance:a.value,
+      cih:cih.value,absent:absent.value
+    }));
+  }catch(e){}
+}
+
+function csvEscape(val){
+  const s=String(val===undefined||val===null?'':val);
+  if(/[",\n]/.test(s)){return '"'+s.replace(/"/g,'""')+'"';}
+  return s;
+}
+
+function sanitizeFilePart(s){
+  const cleaned=String(s||'').trim().replace(/[^a-zA-Z0-9-]+/g,'_').replace(/^_+|_+$/g,'');
+  return cleaned||'Unknown';
+}
+
+function buildCsvString(){
+  let csv='Project,Date,Foreman,TotalManpower,ChargeInHand,TotalAbsent,Discipline,Tower,Level,AreaType,AreaDetail,Area,Activity,Labours,ManHours\n';
+  rows.forEach(r=>{
+    csv+=[
+      csvEscape(PROJECT_CODE),csvEscape(d.value),csvEscape(f.value),
+      csvEscape(a.value),csvEscape(cih.value),csvEscape(absent.value),
+      csvEscape(r.discipline),csvEscape(r.tower),csvEscape(r.level),
+      csvEscape(r.areaType),csvEscape(r.areaDetail),csvEscape(areaLabel(r.areaType,r.areaDetail)),
+      csvEscape(r.activity),csvEscape(r.workers),csvEscape(r.mh)
+    ].join(',')+'\n';
+  });
+  return csv;
+}
+
+function csvFilename(){
+  return PROJECT_CODE+'_Manpower_Report_'+sanitizeFilePart(d.value)+'_'+sanitizeFilePart(f.value)+'.csv';
+}
+
+function totals(){
+  const att=Math.max(0,Number(a.value)||0)*8;
+  const alloc=rows.reduce((s,r)=>s+r.mh,0);
+  const bal=att-alloc;
+  document.getElementById('attendanceMH').textContent=att;
+  document.getElementById('allocatedMH').textContent=alloc;
+  document.getElementById('balanceMH').textContent=bal;
+  document.getElementById('balanceKpi').classList.toggle('neg',bal<0);
+  document.getElementById('activityCount').textContent=rows.length;
+  save();
+}
+
+function startEdit(r){
+  editingId=r.id;
+  document.getElementById('discipline').value=r.discipline;
+  document.getElementById('tower').value=r.tower;
+  document.getElementById('level').value=r.level;
+  areaType.value=r.areaType;
+  updateAreaDetailField();
+  areaDetail.value=r.areaDetail||'';
+  document.getElementById('activity').value=r.activity;
+  document.getElementById('workers').value=r.workers;
+  document.getElementById('formHeading').textContent='Edit Activity';
+  document.getElementById('addBtn').textContent='Update Activity';
+  document.getElementById('cancelEditBtn').classList.remove('d-none');
+  render();
+  document.getElementById('formHeading').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function exitEdit(){
+  editingId=null;
+  document.getElementById('formHeading').textContent='Add Activity';
+  document.getElementById('addBtn').textContent='Add Activity';
+  document.getElementById('cancelEditBtn').classList.add('d-none');
+  clearForm();
+  render();
+}
+
+function clearForm(){
+  document.getElementById('area')&&(document.getElementById('area').value='');
+  areaType.selectedIndex=0;
+  updateAreaDetailField();
+  areaDetail.value='';
+  document.getElementById('activity').value='';
+  document.getElementById('workers').value='';
+}
+
+function render(){
+  const list=document.getElementById('activityList');
+  const prev=document.getElementById('reportPreview');
+  list.innerHTML='';
+  prev.innerHTML='';
+
+  if(rows.length===0){
+    list.innerHTML='<div class="empty">No activities added yet.</div>';
+    prev.innerHTML='<div class="empty">Nothing to preview yet.</div>';
+    totals();
+    return;
+  }
+
+  rows.forEach(r=>{
+    const area=areaLabel(r.areaType,r.areaDetail);
+    const row=document.createElement('div');
+    row.className='act-row'+(r.id===editingId?' editing':'');
+
+    const main=document.createElement('div');
+    main.className='act-main';
+    main.textContent=r.discipline+' — '+r.tower+' / '+r.level+' / '+area;
+
+    const sub=document.createElement('div');
+    sub.className='act-sub';
+    sub.textContent=r.activity;
+
+    const nums=document.createElement('div');
+    nums.className='act-nums';
+    nums.textContent=r.workers+' Labours · '+r.mh+' MH';
+
+    const btns=document.createElement('div');
+    btns.className='act-btns';
+
+    const edit=document.createElement('button');
+    edit.className='btn btn-outline-primary';
+    edit.textContent='Edit';
+    edit.onclick=function(){startEdit(r);};
+
+    const dup=document.createElement('button');
+    dup.className='btn btn-outline-secondary';
+    dup.textContent='Duplicate';
+    dup.onclick=function(){
+      const i=rows.indexOf(r);
+      rows.splice(i+1,0,{...r,id:Date.now()+Math.random()});
+      render();
+    };
+
+    const del=document.createElement('button');
+    del.className='btn btn-outline-danger';
+    del.textContent='Delete';
+    del.onclick=function(){
+      const i=rows.indexOf(r);
+      if(i>-1){
+        if(r.id===editingId) exitEdit();
+        rows.splice(i,1);
+        render();
+      }
+    };
+
+    btns.appendChild(edit);btns.appendChild(dup);btns.appendChild(del);
+    row.appendChild(main);row.appendChild(sub);row.appendChild(nums);row.appendChild(btns);
+    list.appendChild(row);
+
+    const p=document.createElement('div');
+    p.className='prev-item';
+    p.textContent=r.discipline+' | '+r.tower+' | '+r.level+' | '+area+' | '+r.activity+' | '+r.workers+' Labours | '+r.mh+' MH';
+    prev.appendChild(p);
+  });
+  totals();
+}
+
+document.getElementById('addBtn').addEventListener('click', function(){
+  const discipline=document.getElementById('discipline').value;
+  const tower=document.getElementById('tower').value;
+  const level=document.getElementById('level').value;
+  const aType=areaType.value;
+  const aDetail=areaDetail.value.trim();
+  const activity=document.getElementById('activity').value.trim();
+  const workers=Number(document.getElementById('workers').value);
+
+  if(!discipline||!tower||!level){alert('Please select Discipline, Tower and Level.');return;}
+  if(!aType){alert('Please select an Area.');return;}
+  if(AREA_DETAIL_CONFIG[aType]&&!aDetail){
+    alert('Please enter the '+AREA_DETAIL_CONFIG[aType].label+'.');return;
+  }
+  if(!activity||!(workers>=1)){alert('Please enter an Activity and at least 1 Labour.');return;}
+
+  if(editingId!==null){
+    const r=rows.find(x=>x.id===editingId);
+    if(r){
+      r.discipline=discipline;r.tower=tower;r.level=level;
+      r.areaType=aType;r.areaDetail=aDetail;
+      r.activity=activity;r.workers=workers;r.mh=workers*8;
+    }
+    exitEdit();
+    return;
+  }
+
+  rows.push({
+    id:Date.now()+Math.random(),
+    discipline,tower,level,
+    areaType:aType,areaDetail:aDetail,
+    activity,workers,mh:workers*8
+  });
+  clearForm();
+  render();
+});
+
+document.getElementById('cancelEditBtn').addEventListener('click', exitEdit);
+areaType.addEventListener('change', updateAreaDetailField);
+
+a.addEventListener('input', totals);
+cih.addEventListener('input', save);
+absent.addEventListener('input', save);
+d.addEventListener('input', save);
+d.addEventListener('change', save);
+f.addEventListener('input', save);
+f.addEventListener('change', save);
+
+document.getElementById('submitBtn').addEventListener('click', async function(){
+  if(rows.length===0){alert('Add at least one activity before submitting.');return;}
+  if(SHEET_WEBAPP_URL.indexOf('PASTE_YOUR')===0){
+    alert("Central storage isn't connected yet. Export CSV and Share Report still work.");return;
+  }
+  const payload={
+    project:PROJECT_CODE,date:d.value,foreman:f.value,
+    attendance:a.value,chargeInHand:cih.value,absent:absent.value,
+    rows:rows.map(r=>({...r,area:areaLabel(r.areaType,r.areaDetail)}))
+  };
+  const btn=this;const t=btn.textContent;
+  btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    await fetch(SHEET_WEBAPP_URL,{
+      method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
+    });
+    alert('Report submitted — '+rows.length+' activities sent.');
+  }catch(err){
+    alert("Couldn't submit right now — check your connection and try again. Nothing was lost.");
+  }finally{
+    btn.disabled=false;btn.textContent=t;
+  }
+});
+
+document.getElementById('shareBtn').addEventListener('click', async function(){
+  if(rows.length===0){alert('Add at least one activity before sharing.');return;}
+  const csv=buildCsvString();
+  const filename=csvFilename();
+  let file=null;
+  try{file=new File([csv],filename,{type:'text/csv'});}catch(e){file=null;}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file],title:PROJECT_CODE+' Manpower Report',text:PROJECT_CODE+' Manpower Report - '+d.value});
+    }catch(err){}
+  }else{
+    const blob=new Blob([csv],{type:'text/csv'});
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob);
+    link.download=filename;
+    link.click();
+    alert("Direct sharing isn't supported on this browser, so the file downloaded instead.");
+  }
+});
+
+document.getElementById('csvBtn').addEventListener('click', function(){
+  const blob=new Blob([buildCsvString()],{type:'text/csv'});
+  const link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download=csvFilename();
+  link.click();
+});
+
+document.getElementById('clearBtn').addEventListener('click', function(){
+  if(confirm("This will permanently delete today's draft (all details and activities). Continue?")){
+    if(hasStorage){try{localStorage.removeItem(KEY);}catch(e){}}
+    location.reload();
+  }
+});
+
+if(hasStorage){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){
+      const draft=JSON.parse(raw);
+      (draft.rows||[]).forEach(r=>{
+        // migrate old drafts that used a single free-text 'area' field
+        if(r.areaType===undefined){
+          r.areaType='Others';
+          r.areaDetail=r.area||'';
+        }
+        rows.push(r);
+      });
+      d.value=draft.date||d.value;
+      f.value=draft.foreman||'';
+      a.value=draft.attendance||'';
+      cih.value=draft.cih||'';
+      absent.value=draft.absent||'';
+    }
+  }catch(e){}
+}
+updateAreaDetailField();
+render();
+</script>
+</body>
+</html>
