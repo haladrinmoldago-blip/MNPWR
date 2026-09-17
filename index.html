@@ -76,6 +76,12 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
         </select>
       </div>
       <div class="col-md-4">
+        <label class="form-label" for="masterClass">Master Class</label>
+        <select id="masterClass" class="form-select">
+          <option value="" disabled selected>Select Discipline first</option>
+        </select>
+      </div>
+      <div class="col-md-4">
         <label class="form-label" for="tower">Tower</label>
         <select id="tower" class="form-select">
           <option value="" disabled selected>Select</option>
@@ -88,7 +94,7 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
         <label class="form-label" for="level">Level</label>
         <select id="level" class="form-select">
           <option value="" disabled selected>Select</option>
-          <option>BF</option><option>GF</option>
+          <option>BF</option><option>GF</option><option>PF</option>
           <option>L1</option><option>L2</option><option>L3</option><option>L4</option>
           <option>L5</option><option>L6</option><option>L7</option><option>L8</option>
           <option>L9</option><option>L10</option><option>L11</option><option>L12</option>
@@ -112,10 +118,17 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
       <div class="col-md-4" id="areaDetailWrap" style="display:none">
         <label class="form-label" for="areaDetail" id="areaDetailLabel">Detail</label>
         <input id="areaDetail" class="form-control" placeholder="">
+        <select id="areaDetailSelect" class="form-select" style="display:none"></select>
       </div>
       <div class="col-md-4">
-        <label class="form-label" for="activity">Activity</label>
-        <input id="activity" class="form-control" placeholder="e.g. Plenum Box Fixing">
+        <label class="form-label" for="activityType">Activity</label>
+        <select id="activityType" class="form-select">
+          <option value="" disabled selected>Select Master Class first</option>
+        </select>
+      </div>
+      <div class="col-md-4" id="activityDetailWrap" style="display:none">
+        <label class="form-label" for="activityDetail">Specify Activity</label>
+        <input id="activityDetail" class="form-control" placeholder="Type the activity">
       </div>
       <div class="col-md-4">
         <label class="form-label" for="workers">Labours</label>
@@ -159,15 +172,15 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
   </div>
 
   <div class="d-grid gap-2">
-    <button id="submitBtn" class="btn btn-primary">Submit Report</button>
-    <button id="shareBtn" class="btn btn-outline-secondary">Share Report</button>
-    <button id="csvBtn" class="btn btn-outline-secondary">Export CSV</button>
+    <button id="shareBtn" class="btn btn-primary">Share Report</button>
+    <button id="exportBtn" class="btn btn-outline-secondary">Export Excel</button>
     <button id="clearBtn" class="btn btn-outline-danger">Clear Draft</button>
   </div>
 
   <div class="footer" id="appFooter">J82 Hills Edge Daily Reporting</div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ============================================================
 // CLONING THIS APP FOR A NEW PROJECT/SITE?
@@ -178,6 +191,13 @@ const PROJECT_CODE='J82';
 const SITE_NAME='Hills Edge';
 const SHEET_WEBAPP_URL='https://script.google.com/macros/s/AKfycbwjABmd9F5fHAyGgnGzuJdI6vHSWotHwbI8-h5v-R_xcTeJ3Lgbvvs0rWmhoo0TnVZt2A/exec';
 
+// ============================================================
+// MASTER CLASS -> ACTIVITY DATA
+// Discipline -> Master Class -> list of Activities.
+// "Others" is appended automatically at the Activity level.
+// ============================================================
+const MASTER_DATA = {"Electrical": {"Containment Installation": ["Wall Marking", "Electrical Conduiting", "GI Box Installation / Fixing", "Cable Tray Installation", "Trunking Installation", "Upstand Containment", "Staircase Containment", "Pipe Bending", "Junction Box Opening", "Welding Works", "External / Facade Conduit Installation", "Material Shifting"], "Cable Pulling & Wiring": ["Cable Pulling", "Wire Pulling for Power & Lighting", "Floor Conduit Wiring", "Flat Wiring", "Riser Cable Pulling", "Busbar Riser Installation", "Cable Dressing & Tagging"], "DB, SMDB & Panels": ["DB Installation", "SMDB Installation", "DB / ONU Enclosure Fixing", "Panel Termination & Dressing", "LCP Panel Installation", "MCC Panel Installation", "Substation Glanding"], "ELV & Fire Alarm Works": ["Fire Alarm Wiring", "Fire Alarm Device Installation", "CCTV Wiring", "CCTV Device Installation", "Access Control Wiring", "Access Control Device Installation", "Audio Intercom Wiring", "Audio Intercom Device Installation", "GSM / Fibre Wiring", "BMS Wiring", "Data / ONU Wiring", "Data Outlet Termination"], "Electrical Final Fix": ["LSF Works", "Modular Installation", "Light Fixture Installation", "Wiring Accessories Installation", "Thermostat Installation", "Facade Light Installation", "Outlet Support Installation", "Electrical Room Works"], "Earthing & Lightning Protection": ["Earth Pit Installation", "Earth Rod Fixing", "Earth Bar Installation", "Earth Continuity Bonding"], "Slab & Builder's Work": ["Slab Works", "Slab Conduiting", "Thermocol Fixing", "Thermocol Removal", "Column Works", "Concrete Chipping", "Core Cutting", "Material Shifting"], "Electrical Testing & Commissioning": ["Circuit Continuity Test", "Insulation Resistance Test", "DB / SMDB Termination Test", "Functional Testing"], "Rectification & Maintenance": ["Rectification Works", "Snag Clearing", "Box Cleaning", "Conduit Checking / Box Clearing", "Protection Works", "Maintenance Works", "Housekeeping"], "Store & Material Handling": ["Store Work", "Material Receiving", "Material Shifting", "Material Segregation"]}, "Plumbing": {"Slab & Builder's Work": ["Slab Marking", "Slab Sleeve Fixing", "Sleeve Cutting", "Sleeve Removal", "Puddle Flange Fixing", "Floor Trap Puddle Flange Fixing", "Core Cutting", "Core Wall GI Sleeve Fixing", "Column Thermacool Fixing", "Thermacool Removal", "Roof Slab Works", "Duct Marking"], "Drainage Piping": ["Drainage High Level Piping", "Drainage Low Level Piping", "HDPE Piping", "HDPE Fabrication / Jointing", "Floor Drain Point Installation", "Balcony Drain Piping", "Rain Water Piping", "Vent Piping", "Laundry Drain Piping", "Wash Basin Drain Piping", "Sink Drain Piping", "Storm Water Piping", "Floor Trap Installation"], "Condensate Drain Piping (CDP)": ["CDP Piping", "CDP High Level Piping", "CDP Pipe Fixing", "CDP Insulation", "CDP Connection to FCU", "A/C Drain Piping"], "Water Supply Piping": ["Water Supply Marking", "PPR Piping", "PPR High Level Piping", "PPR Pipe Alignment", "PEX Piping", "PEX Marking", "PEX Elbow Fixing", "Corridor Piping", "Water Heater Point Piping", "Pipe Jointing / Branch Work"], "Riser Installation": ["Drainage Riser Piping", "Rain Water Riser Piping", "Water Supply Riser Piping", "Riser Supporting", "Riser Clamping"], "Modular Installation": ["Modular Fixing", "Modular Connection", "Modular Shaft Connection"], "Sanitary Fixtures & Accessories": ["Wash Basin Installation", "Water Closet Installation", "Bidet Spray Installation", "Shower Installation", "Concealed Cistern Installation", "Sanitary Accessories Installation"], "Plumbing Final Fix": ["Water Heater Installation", "Flush Tank Installation", "Water Tank Installation", "Valve Installation", "Water Meter Installation", "Pressure Reducing Valve Installation"], "Testing & Commissioning": ["Drainage Gravity Testing", "Drainage High Level Testing", "Water Supply Pressure Testing", "Riser Testing", "Flushing & Chlorination"], "General Plumbing Work": ["Miscellaneous Work", "Pipe Supporting", "Pipe Clamping", "Pipe Alignment", "Pipe Insulation", "Rock Wool Insulation", "Pipe Protection / Plastic Covering", "Wall Marking", "Night Duty"], "Plumbing Rectification": ["PPR Rectification", "Drainage Rectification", "Vent Pipe Rectification", "Comment Rectification", "Pipe Shifting", "Rework"], "Cleaning & Housekeeping": ["Store Work", "Housekeeping", "Pipe Cleaning", "Material Shifting"]}, "HVAC": {"Duct Supports & Marking": ["Duct Marking", "Duct Supporting", "Duct Support Fabrication", "Duct Opening Marking", "Modular Duct Marking & Supporting"], "Ductwork Installation": ["Apartment Duct Installation", "Common Area Duct Installation", "Riser Duct Installation", "Riser Duct Connection", "Modular Duct Installation", "GI Duct Installation", "PI Duct Installation", "Flexible Duct Connection", "Supply Air Branch Installation", "Exhaust Air Branch Installation", "Smoke Duct Installation"], "Air Outlets & Dampers": ["Plenum Box Installation", "Mouth Piece Installation", "Grille Installation", "Diffuser Installation", "VCD Installation", "Fire Damper Installation", "Shoe Collar Installation", "Access Door Installation"], "HVAC Insulation": ["Duct Insulation", "Riser Duct Insulation", "CHW Pipe Insulation"], "CHW Piping": ["CHW Soft Piping", "CHW Riser Piping", "CHW Pipe Welding", "CHW Pipe Jointing"], "CHW Supports & Valve Packages": ["CHW Pipe Marking", "CHW Pipe Supporting", "CHW Valve Package Installation", "Corridor Valve Package Installation"], "FCU Installation": ["FCU Installation", "FCU Shifting", "FCU Duct Connection", "FCU Valve Package Connection"], "Fans Installation": ["Extract Air Fan Installation", "Jet Fan Installation", "Smoke Extraction Fan Installation", "Stair Pressurisation Fan Installation", "Makeup Air Fan Installation", "Fan Duct Connection"], "BTU Meters": ["BTU Meter Provision", "BTU Meter Installation"], "HVAC Builder's Work": ["Sleeve Cutting", "Ring Fixing", "Support Cutting", "Core Cutting"], "HVAC Testing & Commissioning": ["Duct Pressure Testing", "CHW Pressure Testing", "Air Balancing"], "HVAC Rectification & Finishing": ["Duct Finishing", "Duct Rectification", "CHW Piping Rectification", "Snag Clearing"], "Protection, Cleaning & Material Handling": ["Duct Cleaning", "Duct Protection", "CHW Pipe Protection", "CHW Pipe Painting", "Duct Shifting & Segregation", "Material Shifting"]}};
+
 const KEY='J82_V7';
 const rows=[];
 let editingId=null;
@@ -187,38 +207,116 @@ const f=document.getElementById('foreman');
 const a=document.getElementById('attendance');
 const cih=document.getElementById('cih');
 const absent=document.getElementById('absent');
+const disciplineEl=document.getElementById('discipline');
+const masterClassEl=document.getElementById('masterClass');
+const activityTypeEl=document.getElementById('activityType');
+const activityDetailWrap=document.getElementById('activityDetailWrap');
+const activityDetailEl=document.getElementById('activityDetail');
 const areaType=document.getElementById('areaType');
-const areaDetail=document.getElementById('areaDetail');
 const areaDetailWrap=document.getElementById('areaDetailWrap');
 const areaDetailLabel=document.getElementById('areaDetailLabel');
+const areaDetailInput=document.getElementById('areaDetail');
+const areaDetailSelect=document.getElementById('areaDetailSelect');
 
 d.value=new Date().toISOString().split('T')[0];
 document.title=PROJECT_CODE+' Daily Manpower Reporting';
 document.getElementById('appTitle').textContent=PROJECT_CODE+' Daily Manpower Reporting';
 document.getElementById('appFooter').textContent=PROJECT_CODE+' '+SITE_NAME+' Daily Reporting';
 
-// Area types that need an extra detail value, with the label to show
+// Area types that need an extra detail value
 const AREA_DETAIL_CONFIG={
-  'Flat':{label:'Flat Number',placeholder:'e.g. 205'},
-  'Staircase':{label:'Staircase Number',placeholder:'e.g. 2'},
-  'Others':{label:'Specify Area',placeholder:'Type the area'}
+  'Flat':{type:'text',label:'Flat Number',placeholder:'e.g. 205'},
+  'Staircase':{type:'text',label:'Staircase Number',placeholder:'e.g. 2'},
+  'Service Room':{type:'select',label:'Service Room',options:['LV Room','Substation','Telephone / GSM Room','Electrical Room','Water Meter Room','Store']},
+  'Others':{type:'text',label:'Specify Area',placeholder:'Type the area'}
 };
 
-function updateAreaDetailField(){
-  const cfg=AREA_DETAIL_CONFIG[areaType.value];
-  if(cfg){
-    areaDetailWrap.style.display='';
-    areaDetailLabel.textContent=cfg.label;
-    areaDetail.placeholder=cfg.placeholder;
+function populateSelect(sel, items, placeholder){
+  sel.innerHTML='';
+  const ph=document.createElement('option');
+  ph.value='';ph.disabled=true;ph.selected=true;ph.textContent=placeholder;
+  sel.appendChild(ph);
+  items.forEach(function(it){
+    const o=document.createElement('option');
+    o.value=it;o.textContent=it;
+    sel.appendChild(o);
+  });
+}
+
+function refreshMasterClassOptions(){
+  const disc=disciplineEl.value;
+  const classes=(disc&&MASTER_DATA[disc])?Object.keys(MASTER_DATA[disc]):[];
+  populateSelect(masterClassEl, classes, disc?'Select':'Select Discipline first');
+  refreshActivityOptions();
+}
+
+function refreshActivityOptions(){
+  const disc=disciplineEl.value;
+  const mc=masterClassEl.value;
+  const base=(disc&&mc&&MASTER_DATA[disc]&&MASTER_DATA[disc][mc])?MASTER_DATA[disc][mc].slice():[];
+  if(disc&&mc) base.push('Others');
+  populateSelect(activityTypeEl, base, mc?'Select':'Select Master Class first');
+  updateActivityDetailField();
+}
+
+function updateActivityDetailField(){
+  if(activityTypeEl.value==='Others'){
+    activityDetailWrap.style.display='';
   }else{
-    areaDetailWrap.style.display='none';
-    areaDetail.value='';
+    activityDetailWrap.style.display='none';
+    activityDetailEl.value='';
   }
 }
 
+function updateAreaDetailField(){
+  const cfg=AREA_DETAIL_CONFIG[areaType.value];
+  if(!cfg){
+    areaDetailWrap.style.display='none';
+    areaDetailInput.value='';
+    areaDetailSelect.selectedIndex=0;
+    return;
+  }
+  areaDetailWrap.style.display='';
+  areaDetailLabel.textContent=cfg.label;
+  if(cfg.type==='select'){
+    areaDetailInput.style.display='none';
+    areaDetailSelect.style.display='';
+    if(areaDetailSelect.dataset.builtFor!==areaType.value){
+      populateSelect(areaDetailSelect, cfg.options, 'Select');
+      areaDetailSelect.dataset.builtFor=areaType.value;
+    }
+  }else{
+    areaDetailSelect.style.display='none';
+    areaDetailInput.style.display='';
+    areaDetailInput.placeholder=cfg.placeholder;
+  }
+}
+
+function getAreaDetailValue(){
+  const cfg=AREA_DETAIL_CONFIG[areaType.value];
+  if(!cfg) return '';
+  return cfg.type==='select' ? areaDetailSelect.value : areaDetailInput.value.trim();
+}
+
+function setAreaDetailValue(v){
+  const cfg=AREA_DETAIL_CONFIG[areaType.value];
+  if(!cfg) return;
+  if(cfg.type==='select') areaDetailSelect.value=v||'';
+  else areaDetailInput.value=v||'';
+}
+
 function areaLabel(type,detail){
+  if(!type) return '';
   if(type==='Others') return detail||'Others';
-  if(AREA_DETAIL_CONFIG[type]) return type+' '+detail;
+  if(type==='Flat') return 'Flat '+(detail||'');
+  if(type==='Staircase') return 'Staircase '+(detail||'');
+  if(type==='Service Room') return detail||'Service Room';
+  return type;
+}
+
+function activityLabel(type,detail){
+  if(!type) return '';
+  if(type==='Others') return detail||'Others';
   return type;
 }
 
@@ -243,33 +341,43 @@ function save(){
   }catch(e){}
 }
 
-function csvEscape(val){
-  const s=String(val===undefined||val===null?'':val);
-  if(/[",\n]/.test(s)){return '"'+s.replace(/"/g,'""')+'"';}
-  return s;
-}
-
 function sanitizeFilePart(s){
   const cleaned=String(s||'').trim().replace(/[^a-zA-Z0-9-]+/g,'_').replace(/^_+|_+$/g,'');
   return cleaned||'Unknown';
 }
 
-function buildCsvString(){
-  let csv='Project,Date,Foreman,TotalManpower,ChargeInHand,TotalAbsent,Discipline,Tower,Level,AreaType,AreaDetail,Area,Activity,Labours,ManHours\n';
-  rows.forEach(r=>{
-    csv+=[
-      csvEscape(PROJECT_CODE),csvEscape(d.value),csvEscape(f.value),
-      csvEscape(a.value),csvEscape(cih.value),csvEscape(absent.value),
-      csvEscape(r.discipline),csvEscape(r.tower),csvEscape(r.level),
-      csvEscape(r.areaType),csvEscape(r.areaDetail),csvEscape(areaLabel(r.areaType,r.areaDetail)),
-      csvEscape(r.activity),csvEscape(r.workers),csvEscape(r.mh)
-    ].join(',')+'\n';
+function buildWorkbookBlob(){
+  const headers=['Project','Date','Foreman','Total Manpower','Charge in Hand','Total Absent',
+    'Discipline','Master Class','Tower','Level','Area Type','Area Detail','Area','Activity','Labours','Man Hours'];
+  const dataRows=rows.map(r=>[
+    PROJECT_CODE,d.value,f.value,a.value,cih.value,absent.value,
+    r.discipline,r.masterClass,r.tower,r.level,
+    r.areaType,r.areaDetail,areaLabel(r.areaType,r.areaDetail),
+    activityLabel(r.activityType,r.activityDetail),
+    r.workers,r.mh
+  ]);
+  const sheetData=[headers,...dataRows];
+  const ws=XLSX.utils.aoa_to_sheet(sheetData);
+
+  // auto-fit column widths from the longest value in each column
+  const colWidths=headers.map((h,idx)=>{
+    let max=String(h).length;
+    dataRows.forEach(row=>{
+      const val=row[idx]===undefined||row[idx]===null?'':String(row[idx]);
+      if(val.length>max) max=val.length;
+    });
+    return {wch:Math.min(Math.max(max+2,8),50)};
   });
-  return csv;
+  ws['!cols']=colWidths;
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Report');
+  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  return new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
 
-function csvFilename(){
-  return PROJECT_CODE+'_Manpower_Report_'+sanitizeFilePart(d.value)+'_'+sanitizeFilePart(f.value)+'.csv';
+function xlsxFilename(){
+  return PROJECT_CODE+'_Manpower_Report_'+sanitizeFilePart(d.value)+'_'+sanitizeFilePart(f.value)+'.xlsx';
 }
 
 function totals(){
@@ -286,14 +394,23 @@ function totals(){
 
 function startEdit(r){
   editingId=r.id;
-  document.getElementById('discipline').value=r.discipline;
+
+  disciplineEl.value=r.discipline;
+  refreshMasterClassOptions();
+  masterClassEl.value=r.masterClass;
+  refreshActivityOptions();
+  activityTypeEl.value=r.activityType;
+  updateActivityDetailField();
+  activityDetailEl.value=r.activityDetail||'';
+
   document.getElementById('tower').value=r.tower;
   document.getElementById('level').value=r.level;
   areaType.value=r.areaType;
   updateAreaDetailField();
-  areaDetail.value=r.areaDetail||'';
-  document.getElementById('activity').value=r.activity;
+  setAreaDetailValue(r.areaDetail);
+
   document.getElementById('workers').value=r.workers;
+
   document.getElementById('formHeading').textContent='Edit Activity';
   document.getElementById('addBtn').textContent='Update Activity';
   document.getElementById('cancelEditBtn').classList.remove('d-none');
@@ -311,11 +428,10 @@ function exitEdit(){
 }
 
 function clearForm(){
-  document.getElementById('area')&&(document.getElementById('area').value='');
   areaType.selectedIndex=0;
   updateAreaDetailField();
-  areaDetail.value='';
-  document.getElementById('activity').value='';
+  refreshActivityOptions();
+  activityDetailEl.value='';
   document.getElementById('workers').value='';
 }
 
@@ -334,6 +450,8 @@ function render(){
 
   rows.forEach(r=>{
     const area=areaLabel(r.areaType,r.areaDetail);
+    const activity=activityLabel(r.activityType,r.activityDetail);
+
     const row=document.createElement('div');
     row.className='act-row'+(r.id===editingId?' editing':'');
 
@@ -343,7 +461,7 @@ function render(){
 
     const sub=document.createElement('div');
     sub.className='act-sub';
-    sub.textContent=r.activity;
+    sub.textContent=r.masterClass+': '+activity;
 
     const nums=document.createElement('div');
     nums.className='act-nums';
@@ -384,34 +502,47 @@ function render(){
 
     const p=document.createElement('div');
     p.className='prev-item';
-    p.textContent=r.discipline+' | '+r.tower+' | '+r.level+' | '+area+' | '+r.activity+' | '+r.workers+' Labours | '+r.mh+' MH';
+    p.textContent=r.discipline+' | '+r.masterClass+' | '+r.tower+' | '+r.level+' | '+area+' | '+activity+' | '+r.workers+' Labours | '+r.mh+' MH';
     prev.appendChild(p);
   });
   totals();
 }
 
+disciplineEl.addEventListener('change', refreshMasterClassOptions);
+masterClassEl.addEventListener('change', refreshActivityOptions);
+activityTypeEl.addEventListener('change', updateActivityDetailField);
+areaType.addEventListener('change', updateAreaDetailField);
+
 document.getElementById('addBtn').addEventListener('click', function(){
-  const discipline=document.getElementById('discipline').value;
+  const discipline=disciplineEl.value;
+  const masterClass=masterClassEl.value;
   const tower=document.getElementById('tower').value;
   const level=document.getElementById('level').value;
   const aType=areaType.value;
-  const aDetail=areaDetail.value.trim();
-  const activity=document.getElementById('activity').value.trim();
+  const aDetail=getAreaDetailValue();
+  const actType=activityTypeEl.value;
+  const actDetail=activityDetailEl.value.trim();
   const workers=Number(document.getElementById('workers').value);
 
-  if(!discipline||!tower||!level){alert('Please select Discipline, Tower and Level.');return;}
+  if(!discipline){alert('Please select a Discipline.');return;}
+  if(!masterClass){alert('Please select a Master Class.');return;}
+  if(!tower||!level){alert('Please select Tower and Level.');return;}
   if(!aType){alert('Please select an Area.');return;}
   if(AREA_DETAIL_CONFIG[aType]&&!aDetail){
-    alert('Please enter the '+AREA_DETAIL_CONFIG[aType].label+'.');return;
+    alert('Please provide the '+AREA_DETAIL_CONFIG[aType].label+'.');return;
   }
-  if(!activity||!(workers>=1)){alert('Please enter an Activity and at least 1 Labour.');return;}
+  if(!actType){alert('Please select an Activity.');return;}
+  if(actType==='Others'&&!actDetail){alert('Please specify the activity.');return;}
+  if(!(workers>=1)){alert('Please enter at least 1 Labour.');return;}
 
   if(editingId!==null){
     const r=rows.find(x=>x.id===editingId);
     if(r){
-      r.discipline=discipline;r.tower=tower;r.level=level;
+      r.discipline=discipline;r.masterClass=masterClass;
+      r.tower=tower;r.level=level;
       r.areaType=aType;r.areaDetail=aDetail;
-      r.activity=activity;r.workers=workers;r.mh=workers*8;
+      r.activityType=actType;r.activityDetail=actType==='Others'?actDetail:'';
+      r.workers=workers;r.mh=workers*8;
     }
     exitEdit();
     return;
@@ -419,16 +550,16 @@ document.getElementById('addBtn').addEventListener('click', function(){
 
   rows.push({
     id:Date.now()+Math.random(),
-    discipline,tower,level,
+    discipline,masterClass,tower,level,
     areaType:aType,areaDetail:aDetail,
-    activity,workers,mh:workers*8
+    activityType:actType,activityDetail:actType==='Others'?actDetail:'',
+    workers,mh:workers*8
   });
   clearForm();
   render();
 });
 
 document.getElementById('cancelEditBtn').addEventListener('click', exitEdit);
-areaType.addEventListener('change', updateAreaDetailField);
 
 a.addEventListener('input', totals);
 cih.addEventListener('input', save);
@@ -438,44 +569,39 @@ d.addEventListener('change', save);
 f.addEventListener('input', save);
 f.addEventListener('change', save);
 
-document.getElementById('submitBtn').addEventListener('click', async function(){
-  if(rows.length===0){alert('Add at least one activity before submitting.');return;}
-  if(SHEET_WEBAPP_URL.indexOf('PASTE_YOUR')===0){
-    alert("Central storage isn't connected yet. Export CSV and Share Report still work.");return;
-  }
+function silentSync(){
+  if(SHEET_WEBAPP_URL.indexOf('PASTE_YOUR')===0) return;
+  if(rows.length===0) return;
   const payload={
     project:PROJECT_CODE,date:d.value,foreman:f.value,
     attendance:a.value,chargeInHand:cih.value,absent:absent.value,
-    rows:rows.map(r=>({...r,area:areaLabel(r.areaType,r.areaDetail)}))
+    rows:rows.map(r=>({
+      ...r,
+      area:areaLabel(r.areaType,r.areaDetail),
+      activity:activityLabel(r.activityType,r.activityDetail)
+    }))
   };
-  const btn=this;const t=btn.textContent;
-  btn.disabled=true;btn.textContent='Submitting...';
   try{
-    await fetch(SHEET_WEBAPP_URL,{
+    fetch(SHEET_WEBAPP_URL,{
       method:'POST',mode:'no-cors',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
       body:JSON.stringify(payload)
-    });
-    alert('Report submitted — '+rows.length+' activities sent.');
-  }catch(err){
-    alert("Couldn't submit right now — check your connection and try again. Nothing was lost.");
-  }finally{
-    btn.disabled=false;btn.textContent=t;
-  }
-});
+    }).catch(function(){});
+  }catch(e){}
+}
 
 document.getElementById('shareBtn').addEventListener('click', async function(){
   if(rows.length===0){alert('Add at least one activity before sharing.');return;}
-  const csv=buildCsvString();
-  const filename=csvFilename();
+  silentSync();
+  const blob=buildWorkbookBlob();
+  const filename=xlsxFilename();
   let file=null;
-  try{file=new File([csv],filename,{type:'text/csv'});}catch(e){file=null;}
+  try{file=new File([blob],filename,{type:blob.type});}catch(e){file=null;}
   if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
     try{
       await navigator.share({files:[file],title:PROJECT_CODE+' Manpower Report',text:PROJECT_CODE+' Manpower Report - '+d.value});
     }catch(err){}
   }else{
-    const blob=new Blob([csv],{type:'text/csv'});
     const link=document.createElement('a');
     link.href=URL.createObjectURL(blob);
     link.download=filename;
@@ -484,11 +610,13 @@ document.getElementById('shareBtn').addEventListener('click', async function(){
   }
 });
 
-document.getElementById('csvBtn').addEventListener('click', function(){
-  const blob=new Blob([buildCsvString()],{type:'text/csv'});
+document.getElementById('exportBtn').addEventListener('click', function(){
+  if(rows.length===0){alert('Add at least one activity before exporting.');return;}
+  silentSync();
+  const blob=buildWorkbookBlob();
   const link=document.createElement('a');
   link.href=URL.createObjectURL(blob);
-  link.download=csvFilename();
+  link.download=xlsxFilename();
   link.click();
 });
 
@@ -505,10 +633,16 @@ if(hasStorage){
     if(raw){
       const draft=JSON.parse(raw);
       (draft.rows||[]).forEach(r=>{
-        // migrate old drafts that used a single free-text 'area' field
+        // migrate rows saved before the Area Type split
         if(r.areaType===undefined){
           r.areaType='Others';
           r.areaDetail=r.area||'';
+        }
+        // migrate rows saved before Master Class / Activity dropdown existed
+        if(r.masterClass===undefined){
+          r.masterClass='Unclassified — please Edit and reclassify';
+          r.activityType='Others';
+          r.activityDetail=r.activity||'';
         }
         rows.push(r);
       });
@@ -520,6 +654,7 @@ if(hasStorage){
     }
   }catch(e){}
 }
+refreshMasterClassOptions();
 updateAreaDetailField();
 render();
 </script>
