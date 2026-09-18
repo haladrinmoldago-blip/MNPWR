@@ -198,7 +198,7 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
   <div class="footer" id="appFooter">J82 Hills Edge Daily Reporting</div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.18.5/package/dist/xlsx.full.min.js"></script>
 <script>
 // ============================================================
 // CLONING THIS APP FOR A NEW PROJECT/SITE?
@@ -624,7 +624,13 @@ function silentSync(){
 document.getElementById('shareBtn').addEventListener('click', async function(){
   if(rows.length===0){alert('Add at least one activity before sharing.');return;}
   silentSync();
-  const blob=buildWorkbookBlob();
+  let blob;
+  try{
+    blob=buildWorkbookBlob();
+  }catch(err){
+    alert("Couldn't build the report file. Try reloading the page — if this keeps happening, tell your manager.");
+    return;
+  }
   const filename=xlsxFilename();
   let file=null;
   try{file=new File([blob],filename,{type:blob.type});}catch(e){file=null;}
@@ -644,7 +650,13 @@ document.getElementById('shareBtn').addEventListener('click', async function(){
 document.getElementById('exportBtn').addEventListener('click', function(){
   if(rows.length===0){alert('Add at least one activity before exporting.');return;}
   silentSync();
-  const blob=buildWorkbookBlob();
+  let blob;
+  try{
+    blob=buildWorkbookBlob();
+  }catch(err){
+    alert("Couldn't build the report file. Try reloading the page — if this keeps happening, tell your manager.");
+    return;
+  }
   const link=document.createElement('a');
   link.href=URL.createObjectURL(blob);
   link.download=xlsxFilename();
