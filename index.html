@@ -31,10 +31,28 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
 .prev-item:last-child{border-bottom:none}
 .empty{color:#adb5bd;font-size:13px;font-style:italic}
 .footer{text-align:center;color:#adb5bd;font-size:12px;margin-top:20px}
+#loginGate{position:fixed;inset:0;background:#f7f7f8;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+#loginGate .box{background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:24px;max-width:340px;width:100%}
+#loginGate h2{font-size:16px;font-weight:600;margin:0 0 4px;text-transform:none;letter-spacing:normal}
+#loginGate .sub{font-size:13px;color:#6c757d;margin-bottom:16px}
+#loginError{font-size:13px;color:#b02a37;margin-top:8px;display:none}
 </style>
 </head>
 <body>
-<div class="container">
+
+<div id="loginGate">
+  <div class="box">
+    <h2>Sign In</h2>
+    <div class="sub">Enter your name and PIN to continue.</div>
+    <label class="form-label" for="loginName">Name</label>
+    <input id="loginName" class="form-control mb-2" placeholder="Your name" autocomplete="off">
+    <label class="form-label" for="loginPin">PIN</label>
+    <input id="loginPin" type="password" inputmode="numeric" class="form-control mb-2" placeholder="PIN" autocomplete="off">
+    <button id="loginBtn" class="btn btn-primary w-100 mt-2">Continue</button>
+    <div id="loginError">Name or PIN not recognized. Check with your manager.</div>
+  </div>
+</div>
+<div class="container" id="appContainer" style="display:none">
 
   <div class="page-head">
     <h1 id="appTitle">J82 Daily Manpower Reporting</h1>
@@ -54,7 +72,7 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
       </div>
       <div class="col-md-4">
         <label class="form-label" for="foreman">Foreman</label>
-        <input id="foreman" class="form-control" placeholder="Name">
+        <input id="foreman" class="form-control" placeholder="Name" readonly>
       </div>
       <div class="col-md-4">
         <label class="form-label" for="attendance">Total Manpower</label>
@@ -73,7 +91,6 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
           <option>HVAC</option>
           <option>Plumbing</option>
           <option>Electrical</option>
-          <option>Modular Works</option>
         </select>
       </div>
       <div class="col-md-4">
@@ -110,7 +127,6 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
           <option>Flat</option>
           <option>Staircase</option>
           <option>Corridor</option>
-          <option>Facade</option>
           <option>Common Area</option>
           <option>External</option>
           <option>Service Room</option>
@@ -198,52 +214,7 @@ const SHEET_WEBAPP_URL='https://script.google.com/macros/s/AKfycbwjABmd9F5fHAyGg
 // Discipline -> Master Class -> list of Activities.
 // "Others" is appended automatically at the Activity level.
 // ============================================================
-// Structure below reflects the Discipline / Master-Class / Activity list
-// finalized by Engr. Milan (Planning) and Engr. Avinash on 17 Sep 2026.
-// "Testing and Commissioning" master classes under Electrical and Plumbing
-// are intentionally provisional (empty activity list -> only "Others" shows
-// until the detailed activities are supplied).
-const MASTER_DATA = {
-  "Modular Works": {
-    "Modular Works": ["Modular Installation","Modular Fixing","Modular Connection","Modular Shaft Connection"]
-  },
-  "Electrical": {
-    "Containment Installation": ["Wall Marking","Wall Conduiting","Floor Conduiting","GI Conduiting","GI Box Installation/Fixing","Cable Tray Installation","Surface Containment Installation","Conduit Fabrication, including bending and joining","Junction Box Opening","Welding Works","DB/ONU Enclosure Fixing"],
-    "Cable Pulling and Wiring": ["Cable Pulling","High-Level Wire Pulling","Low-Level Wiring","Ceiling Rose Installation","FCU/Water Heater Control Box Installation and Termination","Busbar Riser Installation"],
-    "DB, SMDB and Panel Works": ["DB Installation","SMDB/MCC/EMCC/EMDB Installation","LV Panel/Capacitor Bank Installation","DB/SMDB Dressing Works","Glanding and Termination Works","LCP Panel Installation"],
-    "ELV and Fire Alarm Works": ["Fire Alarm Cabling","Fire Alarm Device Installation","KNX Cabling Works","BMS Wiring","Fire Alarm Panel Enclosure Installation"],
-    "Electrical Final Fix": ["Light Fixture Installation","Wiring Accessories Installation, including switches, sockets, data outlets, and thermostats","Motion Sensor Installation","Strip LED Light Installation"],
-    "Earthing and Lightning Protection": ["Earth Pit Installation","Earth Rod Fixing","Earth Bar Installation","Lightning Arrestor/Rod Installation","Earth Cable Pulling"],
-    "Slab and Builder's Works": ["Slab Works","Column Works"],
-    "Electrical Testing and Commissioning": [],
-    "Rectification and Maintenance": ["Rectification Works","Snag Clearing","Box Cleaning","Conduit Checking and Box Clearing","Protection Works","Maintenance Works","Housekeeping"],
-    "Store and Material Handling": ["Store Works","Material Receiving","Material Shifting","Material Segregation"]
-  },
-  "Plumbing": {
-    "Slab and Builder's Works": ["Slab Works","Column Works","Wall/Slab Marking","Puddle Flange Fixing","Floor Trap Fixing"],
-    "Drainage Piping": ["High-Level Drainage Piping","Low-Level Drainage Piping","HDPE Piping","HDPE Welding/Jointing","Floor Drain Point Installation","Balcony Drain Piping","Rainwater Piping","Vent Piping","Laundry Drain Piping","Wash Basin Drain Piping","Sink Drain Piping","Stormwater Piping","Floor Trap Installation"],
-    "Condensate Drain Piping": ["CDP Piping","CDP Insulation","CDP Pipe Connections"],
-    "Water Supply Piping": ["Marking and Support Installation","PPR Piping","PEX Marking","PEX Piping","PEX Elbow Fixing","Valve Installation","Pipe Final Connection","Flush Tank Installation"],
-    "Riser Installation": ["HDPE Riser Piping","Drainage Riser Vent Piping","Rainwater Riser Piping","Water Supply Riser Piping","Riser Supporting and Clamping"],
-    "Sanitary Fixtures and Accessories": ["Wash Basin Installation","Water Closet Installation","Bidet Spray Installation","Shower Installation","Concealed Cistern Installation","Sanitary Accessories Installation"],
-    "Plumbing Equipment Installation": ["Water Heater Installation","GRP Tank Installation","Domestic Water Pump Installation","Sump Pump Installation"],
-    "Plumbing Testing and Commissioning": [],
-    "General Plumbing Works": ["Pipe Protection/Plastic Covering"],
-    "Plumbing Rectification": ["PPR Rectification","Drainage Rectification","Vent Pipe Rectification","Comment Rectification","Pipe Shifting","Rework"],
-    "Cleaning and Housekeeping": ["Store Works","Housekeeping","Pipe Cleaning","Material Shifting"]
-  },
-  "HVAC": {
-    "Duct Fabrication, Supports and Marking": ["Duct Opening Marking","Duct Support Fabrication","Duct Fabrication","Duct Insulation","Duct Marking and Supporting","Sleeve Cutting","Ring Fixing","Support Cutting","Core Cutting"],
-    "Ductwork and Damper Installation": ["Riser Duct Installation","Riser Duct Connection","GI Duct Installation","PI Duct Installation","Flexible Duct Connection","Plenum Box Installation","Mouthpiece Installation","VCD Installation","Fire Damper Installation","Shoe Collar Installation"],
-    "Air Outlet Installation": ["Grille Installation","Diffuser Installation","Access Door Marking"],
-    "CHW Piping": ["CHW Pipe Marking and Supporting","CHW High-Level Piping","CHW Riser Piping","CHW Pipe Jointing","CHW Pipe Welding","CHW Pipe Insulation","CHW Valve Package Installation"],
-    "FCU Installation": ["FCU Shifting","FCU Installation","FCU Connection to Duct/Valve Package"],
-    "Fan Installation": ["Smoke Extraction Fan Installation","Stair Pressurization Fan Installation","Makeup Air Fan Installation","Fan Duct Connection"],
-    "BTU Meter Installation": ["BTU Meter Installation"],
-    "HVAC Rectification and Finishing": ["Duct Finishing","Duct Rectification","CHW Piping Rectification","Comment Clearing","Duct Cleaning","Duct Protection","CHW Pipe Protection"],
-    "Store and Material Handling": ["Duct Shifting and Segregation","Material Shifting"]
-  }
-};
+const MASTER_DATA = {"Electrical": {"Containment Installation": ["Wall Marking", "Electrical Conduiting", "GI Box Installation / Fixing", "Cable Tray Installation", "Trunking Installation", "Upstand Containment", "Staircase Containment", "Pipe Bending", "Junction Box Opening", "Welding Works", "External / Facade Conduit Installation", "Material Shifting"], "Cable Pulling & Wiring": ["Cable Pulling", "Wire Pulling for Power & Lighting", "Floor Conduit Wiring", "Flat Wiring", "Riser Cable Pulling", "Busbar Riser Installation", "Cable Dressing & Tagging"], "DB, SMDB & Panels": ["DB Installation", "SMDB Installation", "DB / ONU Enclosure Fixing", "Panel Termination & Dressing", "LCP Panel Installation", "MCC Panel Installation", "Substation Glanding"], "ELV & Fire Alarm Works": ["Fire Alarm Wiring", "Fire Alarm Device Installation", "CCTV Wiring", "CCTV Device Installation", "Access Control Wiring", "Access Control Device Installation", "Audio Intercom Wiring", "Audio Intercom Device Installation", "GSM / Fibre Wiring", "BMS Wiring", "Data / ONU Wiring", "Data Outlet Termination"], "Electrical Final Fix": ["LSF Works", "Modular Installation", "Light Fixture Installation", "Wiring Accessories Installation", "Thermostat Installation", "Facade Light Installation", "Outlet Support Installation", "Electrical Room Works"], "Earthing & Lightning Protection": ["Earth Pit Installation", "Earth Rod Fixing", "Earth Bar Installation", "Earth Continuity Bonding"], "Slab & Builder's Work": ["Slab Works", "Slab Conduiting", "Thermocol Fixing", "Thermocol Removal", "Column Works", "Concrete Chipping", "Core Cutting", "Material Shifting"], "Electrical Testing & Commissioning": ["Circuit Continuity Test", "Insulation Resistance Test", "DB / SMDB Termination Test", "Functional Testing"], "Rectification & Maintenance": ["Rectification Works", "Snag Clearing", "Box Cleaning", "Conduit Checking / Box Clearing", "Protection Works", "Maintenance Works", "Housekeeping"], "Store & Material Handling": ["Store Work", "Material Receiving", "Material Shifting", "Material Segregation"]}, "Plumbing": {"Slab & Builder's Work": ["Slab Marking", "Slab Sleeve Fixing", "Sleeve Cutting", "Sleeve Removal", "Puddle Flange Fixing", "Floor Trap Puddle Flange Fixing", "Core Cutting", "Core Wall GI Sleeve Fixing", "Column Thermacool Fixing", "Thermacool Removal", "Roof Slab Works", "Duct Marking"], "Drainage Piping": ["Drainage High Level Piping", "Drainage Low Level Piping", "HDPE Piping", "HDPE Fabrication / Jointing", "Floor Drain Point Installation", "Balcony Drain Piping", "Rain Water Piping", "Vent Piping", "Laundry Drain Piping", "Wash Basin Drain Piping", "Sink Drain Piping", "Storm Water Piping", "Floor Trap Installation"], "Condensate Drain Piping (CDP)": ["CDP Piping", "CDP High Level Piping", "CDP Pipe Fixing", "CDP Insulation", "CDP Connection to FCU", "A/C Drain Piping"], "Water Supply Piping": ["Water Supply Marking", "PPR Piping", "PPR High Level Piping", "PPR Pipe Alignment", "PEX Piping", "PEX Marking", "PEX Elbow Fixing", "Corridor Piping", "Water Heater Point Piping", "Pipe Jointing / Branch Work"], "Riser Installation": ["Drainage Riser Piping", "Rain Water Riser Piping", "Water Supply Riser Piping", "Riser Supporting", "Riser Clamping"], "Modular Installation": ["Modular Fixing", "Modular Connection", "Modular Shaft Connection"], "Sanitary Fixtures & Accessories": ["Wash Basin Installation", "Water Closet Installation", "Bidet Spray Installation", "Shower Installation", "Concealed Cistern Installation", "Sanitary Accessories Installation"], "Plumbing Final Fix": ["Water Heater Installation", "Flush Tank Installation", "Water Tank Installation", "Valve Installation", "Water Meter Installation", "Pressure Reducing Valve Installation"], "Testing & Commissioning": ["Drainage Gravity Testing", "Drainage High Level Testing", "Water Supply Pressure Testing", "Riser Testing", "Flushing & Chlorination"], "General Plumbing Work": ["Miscellaneous Work", "Pipe Supporting", "Pipe Clamping", "Pipe Alignment", "Pipe Insulation", "Rock Wool Insulation", "Pipe Protection / Plastic Covering", "Wall Marking", "Night Duty"], "Plumbing Rectification": ["PPR Rectification", "Drainage Rectification", "Vent Pipe Rectification", "Comment Rectification", "Pipe Shifting", "Rework"], "Cleaning & Housekeeping": ["Store Work", "Housekeeping", "Pipe Cleaning", "Material Shifting"]}, "HVAC": {"Duct Supports & Marking": ["Duct Marking", "Duct Supporting", "Duct Support Fabrication", "Duct Opening Marking", "Modular Duct Marking & Supporting"], "Ductwork Installation": ["Apartment Duct Installation", "Common Area Duct Installation", "Riser Duct Installation", "Riser Duct Connection", "Modular Duct Installation", "GI Duct Installation", "PI Duct Installation", "Flexible Duct Connection", "Supply Air Branch Installation", "Exhaust Air Branch Installation", "Smoke Duct Installation"], "Air Outlets & Dampers": ["Plenum Box Installation", "Mouth Piece Installation", "Grille Installation", "Diffuser Installation", "VCD Installation", "Fire Damper Installation", "Shoe Collar Installation", "Access Door Installation"], "HVAC Insulation": ["Duct Insulation", "Riser Duct Insulation", "CHW Pipe Insulation"], "CHW Piping": ["CHW Soft Piping", "CHW Riser Piping", "CHW Pipe Welding", "CHW Pipe Jointing"], "CHW Supports & Valve Packages": ["CHW Pipe Marking", "CHW Pipe Supporting", "CHW Valve Package Installation", "Corridor Valve Package Installation"], "FCU Installation": ["FCU Installation", "FCU Shifting", "FCU Duct Connection", "FCU Valve Package Connection"], "Fans Installation": ["Extract Air Fan Installation", "Jet Fan Installation", "Smoke Extraction Fan Installation", "Stair Pressurisation Fan Installation", "Makeup Air Fan Installation", "Fan Duct Connection"], "BTU Meters": ["BTU Meter Provision", "BTU Meter Installation"], "HVAC Builder's Work": ["Sleeve Cutting", "Ring Fixing", "Support Cutting", "Core Cutting"], "HVAC Testing & Commissioning": ["Duct Pressure Testing", "CHW Pressure Testing", "Air Balancing"], "HVAC Rectification & Finishing": ["Duct Finishing", "Duct Rectification", "CHW Piping Rectification", "Snag Clearing"], "Protection, Cleaning & Material Handling": ["Duct Cleaning", "Duct Protection", "CHW Pipe Protection", "CHW Pipe Painting", "Duct Shifting & Segregation", "Material Shifting"]}};
 
 const KEY='J82_V7';
 const rows=[];
@@ -274,8 +245,6 @@ document.getElementById('appFooter').textContent=PROJECT_CODE+' '+SITE_NAME+' Da
 const AREA_DETAIL_CONFIG={
   'Flat':{type:'text',label:'Flat Number',placeholder:'e.g. 205'},
   'Staircase':{type:'text',label:'Staircase Number',placeholder:'e.g. 2'},
-  'Common Area':{type:'text',label:'Common Area Type',placeholder:'e.g. Lift Lobby, Refuge Floor, Podium'},
-  'External':{type:'text',label:'External Type',placeholder:'e.g. Site Boundary, Landscape, MEP Yard'},
   'Service Room':{type:'select',label:'Service Room',options:['LV Room','Substation','Telephone / GSM Room','Electrical Room','Water Meter Room','Store']},
   'Others':{type:'text',label:'Specify Area',placeholder:'Type the area'}
 };
@@ -360,8 +329,6 @@ function areaLabel(type,detail){
   if(type==='Flat') return 'Flat '+(detail||'');
   if(type==='Staircase') return 'Staircase '+(detail||'');
   if(type==='Service Room') return detail||'Service Room';
-  if(type==='Common Area') return detail?('Common Area - '+detail):'Common Area';
-  if(type==='External') return detail?('External - '+detail):'External';
   return type;
 }
 
@@ -381,6 +348,18 @@ function storageSupported(){
 }
 const hasStorage=storageSupported();
 if(!hasStorage){document.getElementById('storageNotice').classList.remove('d-none');}
+
+function sessionStorageSupported(){
+  try{
+    const t='__J82_SESSION_TEST__';
+    window.sessionStorage.setItem(t,'1');
+    window.sessionStorage.removeItem(t);
+    return true;
+  }catch(e){return false;}
+}
+const hasSession=sessionStorageSupported();
+let currentForemanName='';
+let currentForemanPin='';
 
 function save(){
   if(!hasStorage) return;
@@ -625,6 +604,7 @@ function silentSync(){
   if(rows.length===0) return;
   const payload={
     project:PROJECT_CODE,date:d.value,foreman:f.value,
+    foremanName:currentForemanName,foremanPin:currentForemanPin,
     attendance:a.value,chargeInHand:cih.value,absent:absent.value,
     rows:rows.map(r=>({
       ...r,
@@ -648,28 +628,16 @@ document.getElementById('shareBtn').addEventListener('click', async function(){
   const filename=xlsxFilename();
   let file=null;
   try{file=new File([blob],filename,{type:blob.type});}catch(e){file=null;}
-
-  function fallbackDownload(){
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file],title:PROJECT_CODE+' Manpower Report',text:PROJECT_CODE+' Manpower Report - '+d.value});
+    }catch(err){}
+  }else{
     const link=document.createElement('a');
     link.href=URL.createObjectURL(blob);
     link.download=filename;
     link.click();
     alert("Direct sharing isn't supported on this browser, so the file downloaded instead.");
-  }
-
-  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
-    try{
-      await navigator.share({files:[file],title:PROJECT_CODE+' Manpower Report',text:PROJECT_CODE+' Manpower Report - '+d.value});
-    }catch(err){
-      // AbortError = the foreman opened the share sheet and closed it themselves; leave it.
-      // Any other error means the share sheet failed silently, so fall back to a download
-      // instead of doing nothing.
-      if(!err||err.name!=='AbortError'){
-        fallbackDownload();
-      }
-    }
-  }else{
-    fallbackDownload();
   }
 });
 
@@ -690,36 +658,136 @@ document.getElementById('clearBtn').addEventListener('click', function(){
   }
 });
 
-if(hasStorage){
+function initApp(){
+  document.getElementById('loginGate').style.display='none';
+  document.getElementById('appContainer').style.display='';
+  f.value=currentForemanName;
+
+  if(hasStorage){
+    try{
+      const raw=localStorage.getItem(KEY);
+      if(raw){
+        const draft=JSON.parse(raw);
+        const draftForeman=String(draft.foreman||'').trim().toLowerCase();
+        const sameForeman=!draftForeman||draftForeman===currentForemanName.trim().toLowerCase();
+        if(sameForeman){
+          (draft.rows||[]).forEach(r=>{
+            // migrate rows saved before the Area Type split
+            if(r.areaType===undefined){
+              r.areaType='Others';
+              r.areaDetail=r.area||'';
+            }
+            // migrate rows saved before Master Class / Activity dropdown existed
+            if(r.masterClass===undefined){
+              r.masterClass='Unclassified — please Edit and reclassify';
+              r.activityType='Others';
+              r.activityDetail=r.activity||'';
+            }
+            rows.push(r);
+          });
+          d.value=draft.date||d.value;
+          a.value=draft.attendance||'';
+          cih.value=draft.cih||'';
+          absent.value=draft.absent||'';
+        }
+      }
+    }catch(e){}
+  }
+  refreshMasterClassOptions();
+  updateAreaDetailField();
+  render();
+}
+
+// JSONP login check — Apps Script's cross-origin fetch responses are
+// unreliable to read directly, so the PIN check loads a <script> tag
+// instead, which isn't subject to that restriction.
+let jsonpCounter=0;
+function jsonpLogin(name,pin){
+  return new Promise(function(resolve){
+    const cbName='__loginCb'+(jsonpCounter++);
+    const script=document.createElement('script');
+    let settled=false;
+    function cleanup(){
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+    const timer=setTimeout(function(){
+      if(settled) return;
+      settled=true;cleanup();resolve({valid:false,error:true});
+    },8000);
+    window[cbName]=function(result){
+      if(settled) return;
+      settled=true;clearTimeout(timer);cleanup();resolve(result);
+    };
+    script.onerror=function(){
+      if(settled) return;
+      settled=true;clearTimeout(timer);cleanup();resolve({valid:false,error:true});
+    };
+    script.src=SHEET_WEBAPP_URL+'?action=login&callback='+encodeURIComponent(cbName)+
+      '&name='+encodeURIComponent(name)+'&pin='+encodeURIComponent(pin);
+    document.head.appendChild(script);
+  });
+}
+
+document.getElementById('loginBtn').addEventListener('click', async function(){
+  const name=document.getElementById('loginName').value.trim();
+  const pin=document.getElementById('loginPin').value.trim();
+  const errEl=document.getElementById('loginError');
+  errEl.style.display='none';
+
+  if(!name||!pin){
+    errEl.textContent='Please enter your name and PIN.';
+    errEl.style.display='';
+    return;
+  }
+  if(SHEET_WEBAPP_URL.indexOf('PASTE_YOUR')===0){
+    errEl.textContent="Sign-in isn't connected yet. Contact your manager.";
+    errEl.style.display='';
+    return;
+  }
+
+  const btn=this;const t=btn.textContent;
+  btn.disabled=true;btn.textContent='Checking...';
+  const result=await jsonpLogin(name,pin);
+  btn.disabled=false;btn.textContent=t;
+
+  if(result&&result.valid){
+    currentForemanName=name;
+    currentForemanPin=pin;
+    if(hasSession){
+      try{sessionStorage.setItem('J82_AUTH',JSON.stringify({name:name,pin:pin}));}catch(e){}
+    }
+    initApp();
+  }else{
+    errEl.textContent=(result&&result.error)
+      ? "Couldn't reach the server. Check your connection and try again."
+      : 'Name or PIN not recognized. Check with your manager.';
+    errEl.style.display='';
+  }
+});
+
+document.getElementById('loginPin').addEventListener('keydown', function(ev){
+  if(ev.key==='Enter') document.getElementById('loginBtn').click();
+});
+
+function trySavedSession(){
+  if(!hasSession) return false;
   try{
-    const raw=localStorage.getItem(KEY);
-    if(raw){
-      const draft=JSON.parse(raw);
-      (draft.rows||[]).forEach(r=>{
-        // migrate rows saved before the Area Type split
-        if(r.areaType===undefined){
-          r.areaType='Others';
-          r.areaDetail=r.area||'';
-        }
-        // migrate rows saved before Master Class / Activity dropdown existed
-        if(r.masterClass===undefined){
-          r.masterClass='Unclassified — please Edit and reclassify';
-          r.activityType='Others';
-          r.activityDetail=r.activity||'';
-        }
-        rows.push(r);
-      });
-      d.value=draft.date||d.value;
-      f.value=draft.foreman||'';
-      a.value=draft.attendance||'';
-      cih.value=draft.cih||'';
-      absent.value=draft.absent||'';
+    const raw=sessionStorage.getItem('J82_AUTH');
+    if(!raw) return false;
+    const auth=JSON.parse(raw);
+    if(auth&&auth.name&&auth.pin){
+      currentForemanName=auth.name;
+      currentForemanPin=auth.pin;
+      return true;
     }
   }catch(e){}
+  return false;
 }
-refreshMasterClassOptions();
-updateAreaDetailField();
-render();
+
+if(trySavedSession()){
+  initApp();
+}
 </script>
 </body>
 </html>
