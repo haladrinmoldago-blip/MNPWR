@@ -92,6 +92,7 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
           <option>HVAC</option>
           <option>Plumbing</option>
           <option>Electrical</option>
+          <option>Modular</option>
         </select>
       </div>
       <div class="col-md-4">
@@ -171,6 +172,10 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
     <div class="col-4"><div class="kpi" id="balanceKpi"><div class="lbl">Balance MH</div><div class="val" id="balanceMH">0</div></div></div>
   </div>
 
+  <div id="manpowerWarning" class="alert alert-danger py-2 d-none" role="alert" style="font-size:13px">
+    <strong>Warning:</strong> Allocated manpower hours exceed available manpower hours by <span id="negativeBalanceMH">0</span> MH.
+  </div>
+
   <div class="panel">
     <h2>Day Summary</h2>
     <div class="row g-2">
@@ -183,6 +188,10 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
         <input id="absent" type="number" min="0" class="form-control" placeholder="0">
       </div>
     </div>
+    <div class="mt-2">
+      <label class="form-label" for="remarks">Remarks</label>
+      <textarea id="remarks" class="form-control" rows="3" placeholder="Add any remarks or comments"></textarea>
+    </div>
   </div>
 
   <div class="panel">
@@ -190,8 +199,13 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
     <div id="reportPreview"></div>
   </div>
 
+  <div id="submissionNotice" class="alert alert-warning py-2" role="alert" style="font-size:13px">
+    <strong>Final Review:</strong> Before submission, kindly recheck the report for final review. Please export the report before submitting/sharing it.
+  </div>
+  <div id="actionStatus" class="alert alert-success py-2 d-none" role="alert" style="font-size:13px"></div>
+
   <div class="d-grid gap-2">
-    <button id="shareBtn" class="btn btn-primary">Share Report</button>
+    <button id="shareBtn" class="btn btn-primary">Submit / Share Report</button>
     <button id="exportBtn" class="btn btn-outline-secondary">Export Excel</button>
     <button id="clearBtn" class="btn btn-outline-danger">Clear Draft</button>
   </div>
@@ -215,9 +229,50 @@ const SHEET_WEBAPP_URL='https://script.google.com/macros/s/AKfycbwjABmd9F5fHAyGg
 // Discipline -> Master Class -> list of Activities.
 // "Others" is appended automatically at the Activity level.
 // ============================================================
-const MASTER_DATA = {"Electrical": {"Containment Installation": ["Wall Marking", "Electrical Conduiting", "GI Box Installation / Fixing", "Cable Tray Installation", "Trunking Installation", "Upstand Containment", "Staircase Containment", "Pipe Bending", "Junction Box Opening", "Welding Works", "External / Facade Conduit Installation", "Material Shifting"], "Cable Pulling & Wiring": ["Cable Pulling", "Wire Pulling for Power & Lighting", "Floor Conduit Wiring", "Flat Wiring", "Riser Cable Pulling", "Busbar Riser Installation", "Cable Dressing & Tagging"], "DB, SMDB & Panels": ["DB Installation", "SMDB Installation", "DB / ONU Enclosure Fixing", "Panel Termination & Dressing", "LCP Panel Installation", "MCC Panel Installation", "Substation Glanding"], "ELV & Fire Alarm Works": ["Fire Alarm Wiring", "Fire Alarm Device Installation", "CCTV Wiring", "CCTV Device Installation", "Access Control Wiring", "Access Control Device Installation", "Audio Intercom Wiring", "Audio Intercom Device Installation", "GSM / Fibre Wiring", "BMS Wiring", "Data / ONU Wiring", "Data Outlet Termination"], "Electrical Final Fix": ["LSF Works", "Modular Installation", "Light Fixture Installation", "Wiring Accessories Installation", "Thermostat Installation", "Facade Light Installation", "Outlet Support Installation", "Electrical Room Works"], "Earthing & Lightning Protection": ["Earth Pit Installation", "Earth Rod Fixing", "Earth Bar Installation", "Earth Continuity Bonding"], "Slab & Builder's Work": ["Slab Works", "Slab Conduiting", "Thermocol Fixing", "Thermocol Removal", "Column Works", "Concrete Chipping", "Core Cutting", "Material Shifting"], "Electrical Testing & Commissioning": ["Circuit Continuity Test", "Insulation Resistance Test", "DB / SMDB Termination Test", "Functional Testing"], "Rectification & Maintenance": ["Rectification Works", "Snag Clearing", "Box Cleaning", "Conduit Checking / Box Clearing", "Protection Works", "Maintenance Works", "Housekeeping"], "Store & Material Handling": ["Store Work", "Material Receiving", "Material Shifting", "Material Segregation"]}, "Plumbing": {"Slab & Builder's Work": ["Slab Marking", "Slab Sleeve Fixing", "Sleeve Cutting", "Sleeve Removal", "Puddle Flange Fixing", "Floor Trap Puddle Flange Fixing", "Core Cutting", "Core Wall GI Sleeve Fixing", "Column Thermacool Fixing", "Thermacool Removal", "Roof Slab Works", "Duct Marking"], "Drainage Piping": ["Drainage High Level Piping", "Drainage Low Level Piping", "HDPE Piping", "HDPE Fabrication / Jointing", "Floor Drain Point Installation", "Balcony Drain Piping", "Rain Water Piping", "Vent Piping", "Laundry Drain Piping", "Wash Basin Drain Piping", "Sink Drain Piping", "Storm Water Piping", "Floor Trap Installation"], "Condensate Drain Piping (CDP)": ["CDP Piping", "CDP High Level Piping", "CDP Pipe Fixing", "CDP Insulation", "CDP Connection to FCU", "A/C Drain Piping"], "Water Supply Piping": ["Water Supply Marking", "PPR Piping", "PPR High Level Piping", "PPR Pipe Alignment", "PEX Piping", "PEX Marking", "PEX Elbow Fixing", "Corridor Piping", "Water Heater Point Piping", "Pipe Jointing / Branch Work"], "Riser Installation": ["Drainage Riser Piping", "Rain Water Riser Piping", "Water Supply Riser Piping", "Riser Supporting", "Riser Clamping"], "Modular Installation": ["Modular Fixing", "Modular Connection", "Modular Shaft Connection"], "Sanitary Fixtures & Accessories": ["Wash Basin Installation", "Water Closet Installation", "Bidet Spray Installation", "Shower Installation", "Concealed Cistern Installation", "Sanitary Accessories Installation"], "Plumbing Final Fix": ["Water Heater Installation", "Flush Tank Installation", "Water Tank Installation", "Valve Installation", "Water Meter Installation", "Pressure Reducing Valve Installation"], "Testing & Commissioning": ["Drainage Gravity Testing", "Drainage High Level Testing", "Water Supply Pressure Testing", "Riser Testing", "Flushing & Chlorination"], "General Plumbing Work": ["Miscellaneous Work", "Pipe Supporting", "Pipe Clamping", "Pipe Alignment", "Pipe Insulation", "Rock Wool Insulation", "Pipe Protection / Plastic Covering", "Wall Marking", "Night Duty"], "Plumbing Rectification": ["PPR Rectification", "Drainage Rectification", "Vent Pipe Rectification", "Comment Rectification", "Pipe Shifting", "Rework"], "Cleaning & Housekeeping": ["Store Work", "Housekeeping", "Pipe Cleaning", "Material Shifting"]}, "HVAC": {"Duct Supports & Marking": ["Duct Marking", "Duct Supporting", "Duct Support Fabrication", "Duct Opening Marking", "Modular Duct Marking & Supporting"], "Ductwork Installation": ["Apartment Duct Installation", "Common Area Duct Installation", "Riser Duct Installation", "Riser Duct Connection", "Modular Duct Installation", "GI Duct Installation", "PI Duct Installation", "Flexible Duct Connection", "Supply Air Branch Installation", "Exhaust Air Branch Installation", "Smoke Duct Installation"], "Air Outlets & Dampers": ["Plenum Box Installation", "Mouth Piece Installation", "Grille Installation", "Diffuser Installation", "VCD Installation", "Fire Damper Installation", "Shoe Collar Installation", "Access Door Installation"], "HVAC Insulation": ["Duct Insulation", "Riser Duct Insulation", "CHW Pipe Insulation"], "CHW Piping": ["CHW Soft Piping", "CHW Riser Piping", "CHW Pipe Welding", "CHW Pipe Jointing"], "CHW Supports & Valve Packages": ["CHW Pipe Marking", "CHW Pipe Supporting", "CHW Valve Package Installation", "Corridor Valve Package Installation"], "FCU Installation": ["FCU Installation", "FCU Shifting", "FCU Duct Connection", "FCU Valve Package Connection"], "Fans Installation": ["Extract Air Fan Installation", "Jet Fan Installation", "Smoke Extraction Fan Installation", "Stair Pressurisation Fan Installation", "Makeup Air Fan Installation", "Fan Duct Connection"], "BTU Meters": ["BTU Meter Provision", "BTU Meter Installation"], "HVAC Builder's Work": ["Sleeve Cutting", "Ring Fixing", "Support Cutting", "Core Cutting"], "HVAC Testing & Commissioning": ["Duct Pressure Testing", "CHW Pressure Testing", "Air Balancing"], "HVAC Rectification & Finishing": ["Duct Finishing", "Duct Rectification", "CHW Piping Rectification", "Snag Clearing"], "Protection, Cleaning & Material Handling": ["Duct Cleaning", "Duct Protection", "CHW Pipe Protection", "CHW Pipe Painting", "Duct Shifting & Segregation", "Material Shifting"]}};
+const MASTER_DATA = {
+  "Electrical": {
+    "Containment Installation": ["Wall Marking", "Wall Conduiting", "GI Box Installation / Fixing", "Cable Tray/ tray Installation", "Surface Containment", "Floor conduiting", "GI Conduiting", "Fabrication for conduits (bending & joining etc)", "Junction Box Opening", "Welding Works", "DB / ONU Enclosure Fixing"],
+    "Cable Pulling & Wiring": ["Cable Pulling", "Wire Pulling high level", "low level Wiring", "Ceiling rose installation", "FCU/ Water Heater control box installation and termination", "Busbar Riser Installation"],
+    "DB, SMDB & Panels": ["DB Installation", "SMDB/MCC/EMCC/EMDB Installation", "LV Panel/Capacitor Bank Installation", "DB/SMDB Dressing works", "Glanding & Termination Works", "LCP Panel Installation"],
+    "ELV & Fire Alarm Works": ["Fire Alarm Cabling", "Fire Alarm Device Installation", "KNX Cabling works", "BMS Wiring", "Fire Panel Enclosure Installation"],
+    "Electrical Final Fix": ["Light Fixture Installation", "Wiring Accessories Installation ( Switch Socket / Data Outlet / Thermostat )", "Motion Sensor Installation", "Strip LED Light installation"],
+    "Earthing & Lightning Protection": ["Earth Pit Installation", "Earth Rod Fixing", "Earth Bar Installation", "Lightning Arrestor/Rod", "Earth Cable Pulling"],
+    "Slab & Builder's Work": ["Slab Works", "Column Works"],
+    "Electrical Testing & Commissioning": ["Circuit Continuity Test", "Insulation Resistance Test", "DB / SMDB Termination Test", "Functional Testing"],
+    "Rectification & Maintenance": ["Rectification Works", "Snag Clearing", "Box Cleaning", "Conduit Checking / Box Clearing", "Protection Works", "Maintenance Works", "Housekeeping"],
+    "Store & Material Handling": ["Store Work", "Material Receiving", "Material Shifting", "Material Segregation"]
+  },
+  "Plumbing": {
+    "Slab & Builder's Work": ["Slab works", "Puddle Flange Fixing", "Floor Trap Fixing", "Column works", "Wall/Slab Marking"],
+    "Drainage Piping": ["Drainage High Level Piping", "Drainage Low Level Piping", "HDPE Piping", "HDPE Welding / Jointing", "Floor Drain Point Installation", "Balcony Drain Piping", "Rain Water Piping", "Vent Piping", "Laundry Drain Piping", "Wash Basin Drain Piping", "Sink Drain Piping", "Storm Water Piping", "Floor Trap Installation", "Drainage Gravity Testing"],
+    "Condensate Drain Piping (CDP)": ["CDP Piping", "CDP Insulation", "CDP Pipe Connections"],
+    "Water Supply Piping": ["Marking and Support Installation", "PPR Piping", "Pressure Testing", "PEX Marking", "PEX Piping", "PEX Elbow Fixing", "Valves Installation", "Pipe Final Connection", "Flush Tank Installation"],
+    "Riser Installation": ["HDPE Riser Piping", "Drainage Riser Vent Piping", "Rain Water Riser Piping", "Water Supply Riser Piping", "Riser Supporting & Clamping"],
+    "Sanitary Fixtures & Accessories": ["Wash Basin Installation", "Water Closet Installation", "Bidet Spray Installation", "Shower Installation", "Concealed Cistern Installation", "Sanitary Accessories Installation"],
+    "Plumbing Equipment Installation": ["Water Heater Installation", "GRP Tank Installation", "Domestic Water Pump Installation", "Sump Pump Installation"],
+    "Testing & Commissioning": ["Drainage Gravity Testing", "Drainage High Level Testing", "Water Supply Pressure Testing", "Riser Testing", "Flushing & Chlorination"],
+    "General Plumbing Work": ["Pipe Protection / Plastic Covering"],
+    "Plumbing Rectification": ["PPR Rectification", "Drainage Rectification", "Vent Pipe Rectification", "Comment Rectification", "Pipe Shifting", "Rework"],
+    "Cleaning & Housekeeping": ["Store Work", "Housekeeping", "Pipe Cleaning", "Material Shifting"]
+  },
+  "HVAC": {
+    "Duct Fabrication, Supports & Marking": ["Duct Opening Marking", "Duct Support Fabrication", "Duct Fabrication", "Duct Insulation", "Duct Marking & Supporting", "Sleeve Cutting", "Ring Fixing", "Support Cutting", "Core Cutting"],
+    "Ductwork & Dampers Installation": ["Riser Duct Installation", "Riser Duct Connection", "GI Duct Installation", "PI Duct Installation", "Flexible Duct Connection", "Plenum Box Installation", "Mouth Piece Installation", "VCD Installation", "Fire Damper Installation", "Shoe Collar Installation"],
+    "Air Outlets Installation": ["Grill Installation", "Diffuser Installation", "Access Door Marking"],
+    "CHW Piping": ["CHW Pipe Marking and Supporting", "CHW High Level Piping", "CHW Riser Piping", "CHW Pipe Jointing", "CHW Pipe Welding", "CHW Pipe Insulation", "CHW Valve Package Installation", "Pressure Testing"],
+    "FCU Installation": ["FCU Shifting", "FCU Installation", "FCU Connection to Duct / Valve Package"],
+    "Fans Installation": ["Smoke Extraction Fan Installation", "Stair Pressurisation Fan Installation", "Makeup Air Fan Installation", "Fan Duct Connection"],
+    "BTU Meters": ["BTU Meter Installation"],
+    "HVAC Rectification & Finishing": ["Duct Finishing", "Duct Rectification", "CHW Piping Rectification", "Comment Clearing", "Duct Cleaning", "Duct Protection", "CHW Pipe Protection"],
+    "Store & Material Handling": ["Duct Shifting & Segregation", "Material Shifting"]
+  },
+  "Modular": {
+    "Modular Works": ["Modular Support installation", "Modular shifting", "Modular installation", "Modular jointing works"]
+  }
+};
 
-const KEY='J82_V7';
+
+const KEY='J82_V8';
 const rows=[];
 let editingId=null;
 
@@ -226,6 +281,7 @@ const f=document.getElementById('foreman');
 const a=document.getElementById('attendance');
 const cih=document.getElementById('cih');
 const absent=document.getElementById('absent');
+const remarks=document.getElementById('remarks');
 const disciplineEl=document.getElementById('discipline');
 const masterClassEl=document.getElementById('masterClass');
 const activityTypeEl=document.getElementById('activityType');
@@ -246,6 +302,9 @@ document.getElementById('appFooter').textContent=PROJECT_CODE+' '+SITE_NAME+' Da
 const AREA_DETAIL_CONFIG={
   'Flat':{type:'text',label:'Flat Number',placeholder:'e.g. 205'},
   'Staircase':{type:'text',label:'Staircase Number',placeholder:'e.g. 2'},
+  'Common Area':{type:'text',label:'Type',placeholder:'Type common area'},
+  'External':{type:'text',label:'Type',placeholder:'Type external area'},
+  'Facade':{type:'text',label:'Mention',placeholder:'Mention facade / location'},
   'Service Room':{type:'select',label:'Service Room',options:['LV Room','Substation','Telephone / GSM Room','Electrical Room','Water Meter Room','Store']},
   'Others':{type:'text',label:'Specify Area',placeholder:'Type the area'}
 };
@@ -361,13 +420,16 @@ function sessionStorageSupported(){
 const hasSession=sessionStorageSupported();
 let currentForemanName='';
 let currentForemanPin='';
+let reportExported=false;
+let reportSubmitted=false;
 
 function save(){
   if(!hasStorage) return;
   try{
     localStorage.setItem(KEY,JSON.stringify({
       rows,date:d.value,foreman:f.value,attendance:a.value,
-      cih:cih.value,absent:absent.value
+      cih:cih.value,absent:absent.value,remarks:remarks.value,
+      reportExported,reportSubmitted
     }));
   }catch(e){}
 }
@@ -378,20 +440,47 @@ function sanitizeFilePart(s){
 }
 
 function buildWorkbookBlob(){
-  const headers=['Project','Date','Foreman','Total Manpower','Charge in Hand','Total Absent',
-    'Discipline','Master Class','Tower','Level','Area Type','Area Detail','Area','Activity','Labours','Man Hours'];
+  // Keep Charge in Hand / Absent out of the activity columns.
+  // Export a clean activity table, then show daily summary values as rows below it.
+  const headers=['Project','Date','Foreman','Discipline','Master Class','Tower','Level','Area Type','Area Detail','Area','Activity','Labours','Man Hours'];
   const dataRows=rows.map(r=>[
-    PROJECT_CODE,d.value,f.value,a.value,cih.value,absent.value,
+    PROJECT_CODE,d.value,f.value,
     r.discipline,r.masterClass,r.tower,r.level,
     r.areaType,r.areaDetail,areaLabel(r.areaType,r.areaDetail),
     activityLabel(r.activityType,r.activityDetail),
     r.workers,r.mh
   ]);
-  const sheetData=[headers,...dataRows];
-  const ws=XLSX.utils.aoa_to_sheet(sheetData);
 
-  // auto-fit column widths from the longest value in each column
-  const colWidths=headers.map((h,idx)=>{
+  const sheetData=[
+    ['Project',PROJECT_CODE],
+    ['Date',d.value],
+    ['Foreman',f.value],
+    ['Total Manpower',a.value],
+    ['Remarks',remarks.value||''],
+    [],
+    headers,
+    ...dataRows,
+    [],
+    ['Charge in Hand',cih.value||0],
+    ['Total Absent',absent.value||0],
+    ['Final Manpower',dataRows.reduce((sum,row)=>sum+(Number(row[11])||0),0)]
+  ];
+
+  const ws=XLSX.utils.aoa_to_sheet(sheetData);
+  const tableHeaderRow=7; // 1-based Excel row containing activity headers
+  const firstDataRow=tableHeaderRow+1;
+  const lastDataRow=tableHeaderRow+dataRows.length;
+
+  if(dataRows.length>0){
+    // Make Final Manpower an Excel SUM of the activity Labour column.
+    const finalRow=sheetData.length;
+    const finalCell='B'+finalRow;
+    ws[finalCell]={t:'n',f:'SUM(L'+firstDataRow+':L'+lastDataRow+')',v:dataRows.reduce((sum,row)=>sum+(Number(row[11])||0),0)};
+  }
+
+  // Auto-fit columns from the longest value in each column.
+  const widthData=headers.slice();
+  const colWidths=widthData.map((h,idx)=>{
     let max=String(h).length;
     dataRows.forEach(row=>{
       const val=row[idx]===undefined||row[idx]===null?'':String(row[idx]);
@@ -399,6 +488,9 @@ function buildWorkbookBlob(){
     });
     return {wch:Math.min(Math.max(max+2,8),50)};
   });
+  // Give the summary label/value columns enough space.
+  colWidths[0].wch=Math.max(colWidths[0].wch,18);
+  colWidths[1].wch=Math.max(colWidths[1].wch,24);
   ws['!cols']=colWidths;
 
   const wb=XLSX.utils.book_new();
@@ -419,6 +511,16 @@ function totals(){
   document.getElementById('allocatedMH').textContent=alloc;
   document.getElementById('balanceMH').textContent=bal;
   document.getElementById('balanceKpi').classList.toggle('neg',bal<0);
+
+  const warning=document.getElementById('manpowerWarning');
+  const negativeBalance=document.getElementById('negativeBalanceMH');
+  if(bal<0){
+    negativeBalance.textContent=Math.abs(bal);
+    warning.classList.remove('d-none');
+  }else{
+    warning.classList.add('d-none');
+  }
+
   document.getElementById('activityCount').textContent=rows.length;
   save();
 }
@@ -536,6 +638,12 @@ function render(){
     p.textContent=r.discipline+' | '+r.masterClass+' | '+r.tower+' | '+r.level+' | '+area+' | '+activity+' | '+r.workers+' Labours | '+r.mh+' MH';
     prev.appendChild(p);
   });
+  if(remarks.value.trim()){
+    const rp=document.createElement('div');
+    rp.className='prev-item';
+    rp.textContent='Remarks | '+remarks.value.trim();
+    prev.appendChild(rp);
+  }
   totals();
 }
 
@@ -595,10 +703,51 @@ document.getElementById('cancelEditBtn').addEventListener('click', exitEdit);
 a.addEventListener('input', totals);
 cih.addEventListener('input', save);
 absent.addEventListener('input', save);
+remarks.addEventListener('input', save);
 d.addEventListener('input', save);
 d.addEventListener('change', save);
 f.addEventListener('input', save);
 f.addEventListener('change', save);
+remarks.addEventListener('input', save);
+
+function showActionStatus(message, type){
+  const el=document.getElementById('actionStatus');
+  el.textContent=message;
+  el.className='alert py-2';
+  el.classList.add(type==='danger'?'alert-danger':type==='warning'?'alert-warning':'alert-success');
+  el.classList.remove('d-none');
+}
+
+function hideActionStatus(){
+  document.getElementById('actionStatus').classList.add('d-none');
+}
+
+function updateSubmissionNotice(){
+  const notice=document.getElementById('submissionNotice');
+  if(reportSubmitted){
+    notice.className='alert alert-success py-2';
+    notice.innerHTML='<strong>Submitted:</strong> Thank you for submitting the report. Keep the exported file for your records.';
+  }else if(reportExported){
+    notice.className='alert alert-info py-2';
+    notice.innerHTML='<strong>Ready for submission:</strong> Thank you for exporting the report. Kindly submit/share the report after your final review.';
+  }else{
+    notice.className='alert alert-warning py-2';
+    notice.innerHTML='<strong>Final Review:</strong> Before submission, kindly recheck the report for final review. Please export the report before submitting/sharing it.';
+  }
+}
+
+function markExported(){
+  reportExported=true;
+  reportSubmitted=false;
+  updateSubmissionNotice();
+  save();
+}
+
+function markSubmitted(){
+  reportSubmitted=true;
+  updateSubmissionNotice();
+  save();
+}
 
 function silentSync(){
   if(SHEET_WEBAPP_URL.indexOf('PASTE_YOUR')===0) return;
@@ -623,7 +772,15 @@ function silentSync(){
 }
 
 document.getElementById('shareBtn').addEventListener('click', async function(){
-  if(rows.length===0){alert('Add at least one activity before sharing.');return;}
+  if(rows.length===0){alert('Add at least one activity before submitting.');return;}
+  if(!reportExported){
+    showActionStatus('Please export the report first, then submit/share it. Before submission, kindly recheck the report for final review.','warning');
+    document.getElementById('exportBtn').focus();
+    return;
+  }
+  const confirmed=confirm('Before submission, kindly recheck the report for final review.\n\nHave you checked the activities, manpower, Charge in Hand, Total Absent and Remarks?');
+  if(!confirmed) return;
+
   silentSync();
   let blob;
   try{
@@ -638,13 +795,17 @@ document.getElementById('shareBtn').addEventListener('click', async function(){
   if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
     try{
       await navigator.share({files:[file],title:PROJECT_CODE+' Manpower Report',text:PROJECT_CODE+' Manpower Report - '+d.value});
-    }catch(err){}
+      markSubmitted();
+      showActionStatus('Thank you for submitting/sharing the report.','success');
+    }catch(err){
+      showActionStatus('Submission cancelled. Please review the report and submit/share it when ready.','warning');
+    }
   }else{
     const link=document.createElement('a');
     link.href=URL.createObjectURL(blob);
     link.download=filename;
     link.click();
-    alert("Direct sharing isn't supported on this browser, so the file downloaded instead.");
+    showActionStatus('Sharing is not supported on this browser. The report was downloaded again; please submit/share the exported file manually.','warning');
   }
 });
 
@@ -662,10 +823,14 @@ document.getElementById('exportBtn').addEventListener('click', function(){
   link.href=URL.createObjectURL(blob);
   link.download=xlsxFilename();
   link.click();
+  markExported();
+  showActionStatus('Thank you for exporting the report. Kindly submit/share the report after your final review.','success');
 });
 
 document.getElementById('clearBtn').addEventListener('click', function(){
   if(confirm("This will permanently delete today's draft (all details and activities). Continue?")){
+    reportExported=false;
+    reportSubmitted=false;
     if(hasStorage){try{localStorage.removeItem(KEY);}catch(e){}}
     location.reload();
   }
@@ -702,12 +867,16 @@ function initApp(){
           a.value=draft.attendance||'';
           cih.value=draft.cih||'';
           absent.value=draft.absent||'';
+          remarks.value=draft.remarks||'';
+          reportExported=!!draft.reportExported;
+          reportSubmitted=!!draft.reportSubmitted;
         }
       }
     }catch(e){}
   }
   refreshMasterClassOptions();
   updateAreaDetailField();
+  updateSubmissionNotice();
   render();
 }
 
