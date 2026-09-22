@@ -131,6 +131,7 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
           <option>Corridor</option>
           <option>Common Area</option>
           <option>External</option>
+          <option>Facade</option>
           <option>Service Room</option>
           <option>Others</option>
         </select>
@@ -139,6 +140,10 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
         <label class="form-label" for="areaDetail" id="areaDetailLabel">Detail</label>
         <input id="areaDetail" class="form-control" placeholder="">
         <select id="areaDetailSelect" class="form-select" style="display:none"></select>
+        <div id="areaDetailExtraWrap" class="mt-2" style="display:none">
+          <label class="form-label" for="areaDetailExtra" id="areaDetailExtraLabel">Reference</label>
+          <input id="areaDetailExtra" class="form-control" placeholder="">
+        </div>
       </div>
       <div class="col-md-4">
         <label class="form-label" for="activityType">Activity</label>
@@ -153,6 +158,33 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
       <div class="col-md-4">
         <label class="form-label" for="workers">Labours</label>
         <input id="workers" type="number" min="1" class="form-control" placeholder="0">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="quantity">Work Quantity</label>
+        <input id="quantity" type="number" min="0.01" step="0.01" class="form-control" placeholder="e.g. 20">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="unit">Unit</label>
+        <select id="unit" class="form-select">
+          <option value="" disabled selected>Select Unit</option>
+          <option>Meters</option>
+          <option>m²</option>
+          <option>m³</option>
+          <option>Nos</option>
+          <option>Points</option>
+          <option>Sets</option>
+          <option>Tests</option>
+          <option>Lots</option>
+          <option>Kg</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="specification">Size / Specification</label>
+        <input id="specification" class="form-control" placeholder='e.g. 3&quot; / 4C x 16mm² / 500x300mm'>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Measurement Example</label>
+        <div id="measurementHint" class="form-control-plaintext text-muted" style="font-size:13px;padding-top:7px">e.g. 20 Meters · 3&quot;</div>
       </div>
     </div>
     <div class="mt-3">
@@ -272,7 +304,7 @@ const MASTER_DATA = {
 };
 
 
-const KEY='J82_V8';
+const KEY='J82_V10';
 const rows=[];
 let editingId=null;
 
@@ -292,6 +324,13 @@ const areaDetailWrap=document.getElementById('areaDetailWrap');
 const areaDetailLabel=document.getElementById('areaDetailLabel');
 const areaDetailInput=document.getElementById('areaDetail');
 const areaDetailSelect=document.getElementById('areaDetailSelect');
+const areaDetailExtraWrap=document.getElementById('areaDetailExtraWrap');
+const areaDetailExtraLabel=document.getElementById('areaDetailExtraLabel');
+const areaDetailExtraInput=document.getElementById('areaDetailExtra');
+const quantityEl=document.getElementById('quantity');
+const unitEl=document.getElementById('unit');
+const specificationEl=document.getElementById('specification');
+const measurementHint=document.getElementById('measurementHint');
 
 d.value=new Date().toISOString().split('T')[0];
 document.title=PROJECT_CODE+' Daily Manpower Reporting';
@@ -300,13 +339,42 @@ document.getElementById('appFooter').textContent=PROJECT_CODE+' '+SITE_NAME+' Da
 
 // Area types that need an extra detail value
 const AREA_DETAIL_CONFIG={
-  'Flat':{type:'text',label:'Flat Number',placeholder:'e.g. 205'},
-  'Staircase':{type:'text',label:'Staircase Number',placeholder:'e.g. 2'},
-  'Common Area':{type:'text',label:'Type',placeholder:'Type common area'},
-  'External':{type:'text',label:'Type',placeholder:'Type external area'},
-  'Facade':{type:'text',label:'Mention',placeholder:'Mention facade / location'},
-  'Service Room':{type:'select',label:'Service Room',options:['LV Room','Substation','Telephone / GSM Room','Electrical Room','Water Meter Room','Store']},
-  'Others':{type:'text',label:'Specify Area',placeholder:'Type the area'}
+  'Flat':{
+    type:'select',
+    label:'Flat Type',
+    options:['Studio','1BHK','2BHK','3BHK','4BHK','5BHK','Duplex','Penthouse','Other'],
+    secondary:{label:'Flat Number',placeholder:'e.g. 205',required:true}
+  },
+  'Staircase':{
+    type:'text',
+    label:'Staircase Number',
+    placeholder:'e.g. 2'
+  },
+  'Common Area':{
+    type:'select',
+    label:'Common Area Type',
+    options:['Lobby','Corridor','Lift Lobby','Stair Lobby','Parking','Amenity','Gym','Pool','Clubhouse','Service Area','Other']
+  },
+  'External':{
+    type:'select',
+    label:'External Area Type',
+    options:['Road','Footpath','Landscape','Boundary','Entrance','Parking','External Services','Other']
+  },
+  'Facade':{
+    type:'text',
+    label:'Mention',
+    placeholder:'e.g. North Elevation / Podium / Tower A Facade'
+  },
+  'Service Room':{
+    type:'select',
+    label:'Service Room',
+    options:['LV Room','Substation','Telephone / GSM Room','Electrical Room','Water Meter Room','Store']
+  },
+  'Others':{
+    type:'text',
+    label:'Specify Area',
+    placeholder:'Type the area'
+  }
 };
 
 function populateSelect(sel, items, placeholder){
@@ -350,10 +418,13 @@ function updateAreaDetailField(){
   const cfg=AREA_DETAIL_CONFIG[areaType.value];
   if(!cfg){
     areaDetailWrap.style.display='none';
+    areaDetailExtraWrap.style.display='none';
     areaDetailInput.value='';
-    areaDetailSelect.selectedIndex=0;
+    areaDetailExtraInput.value='';
+    areaDetailSelect.innerHTML='';
     return;
   }
+
   areaDetailWrap.style.display='';
   areaDetailLabel.textContent=cfg.label;
   if(cfg.type==='select'){
@@ -366,7 +437,16 @@ function updateAreaDetailField(){
   }else{
     areaDetailSelect.style.display='none';
     areaDetailInput.style.display='';
-    areaDetailInput.placeholder=cfg.placeholder;
+    areaDetailInput.placeholder=cfg.placeholder||'';
+  }
+
+  if(cfg.secondary){
+    areaDetailExtraWrap.style.display='';
+    areaDetailExtraLabel.textContent=cfg.secondary.label;
+    areaDetailExtraInput.placeholder=cfg.secondary.placeholder||'';
+  }else{
+    areaDetailExtraWrap.style.display='none';
+    areaDetailExtraInput.value='';
   }
 }
 
@@ -376,20 +456,57 @@ function getAreaDetailValue(){
   return cfg.type==='select' ? areaDetailSelect.value : areaDetailInput.value.trim();
 }
 
-function setAreaDetailValue(v){
-  const cfg=AREA_DETAIL_CONFIG[areaType.value];
-  if(!cfg) return;
-  if(cfg.type==='select') areaDetailSelect.value=v||'';
-  else areaDetailInput.value=v||'';
+function getAreaDetailExtraValue(){
+  return areaDetailExtraInput.value.trim();
 }
 
-function areaLabel(type,detail){
+function setAreaDetailValue(primary,extra){
+  const cfg=AREA_DETAIL_CONFIG[areaType.value];
+  if(!cfg) return;
+  if(cfg.type==='select') areaDetailSelect.value=primary||'';
+  else areaDetailInput.value=primary||'';
+  areaDetailExtraInput.value=extra||'';
+}
+
+function areaLabel(type,detail,extra){
   if(!type) return '';
-  if(type==='Others') return detail||'Others';
-  if(type==='Flat') return 'Flat '+(detail||'');
+  if(type==='Flat'){
+    const t=detail||'Flat';
+    return 'Flat '+t+(extra?' - '+extra:'');
+  }
   if(type==='Staircase') return 'Staircase '+(detail||'');
   if(type==='Service Room') return detail||'Service Room';
+  if(type==='Common Area') return 'Common Area - '+(detail||'');
+  if(type==='External') return 'External - '+(detail||'');
+  if(type==='Facade') return 'Facade - '+(detail||'');
+  if(type==='Others') return detail||'Others';
   return type;
+}
+
+function measurementDefault(activity){
+  const s=String(activity||'').toLowerCase();
+  if(/ppr|pex|hdpe|drainage .*piping|water supply|pipe|piping|conduit|conduiting|cable pulling|wire pulling|busbar riser|cable tray|tray installation|trunking|containment/.test(s)){
+    return {unit:'Meters',hint:'e.g. 20 Meters · 3&quot;'};
+  }
+  if(/light fixture|wiring accessories|motion sensor|strip led|earth pit|earth rod|earth bar|lightning arrestor|db installation|smdb|panel installation|fc[u] installation|fan installation|bt[u] meter|fixture|valve installation|floor trap|water closet|wash basin/.test(s)){
+    return {unit:'Nos',hint:'e.g. 12 Nos · 18W'};
+  }
+  if(/testing|test$/.test(s)){
+    return {unit:'Tests',hint:'e.g. 4 Tests · IR / Continuity'};
+  }
+  if(/housekeeping|store work|material receiving|material shifting|segregation|rework/.test(s)){
+    return {unit:'Lots',hint:'e.g. 1 Lot · Area / Material'};
+  }
+  return {unit:'',hint:'e.g. 20 Meters · 3&quot;'};
+}
+
+function updateMeasurementDefaults(){
+  const def=measurementDefault(activityTypeEl.value);
+  if(def.unit && (!unitEl.value || unitEl.dataset.auto==='1')){
+    unitEl.value=def.unit;
+    unitEl.dataset.auto='1';
+  }
+  measurementHint.innerHTML=def.hint;
 }
 
 function activityLabel(type,detail){
@@ -440,14 +557,21 @@ function sanitizeFilePart(s){
 }
 
 function buildWorkbookBlob(){
-  // Keep Charge in Hand / Absent out of the activity columns.
-  // Export a clean activity table, then show daily summary values as rows below it.
-  const headers=['Project','Date','Foreman','Discipline','Master Class','Tower','Level','Area Type','Area Detail','Area','Activity','Labours','Man Hours'];
+  // Activity rows contain only activity-specific data.
+  // Daily summary values remain as summary rows below the table.
+  const headers=[
+    'Project','Date','Foreman','Discipline','Master Class','Tower','Level',
+    'Area Type','Area Sub Type','Area Reference','Area','Activity',
+    'Quantity','Unit','Size / Specification','Labours','Man Hours'
+  ];
+
   const dataRows=rows.map(r=>[
     PROJECT_CODE,d.value,f.value,
     r.discipline,r.masterClass,r.tower,r.level,
-    r.areaType,r.areaDetail,areaLabel(r.areaType,r.areaDetail),
+    r.areaType,r.areaDetail||'',r.areaDetailExtra||'',
+    areaLabel(r.areaType,r.areaDetail,r.areaDetailExtra),
     activityLabel(r.activityType,r.activityDetail),
+    r.quantity,r.unit,r.specification||'',
     r.workers,r.mh
   ]);
 
@@ -463,7 +587,7 @@ function buildWorkbookBlob(){
     [],
     ['Charge in Hand',cih.value||0],
     ['Total Absent',absent.value||0],
-    ['Final Manpower',dataRows.reduce((sum,row)=>sum+(Number(row[11])||0),0)]
+    ['Final Manpower',dataRows.reduce((sum,row)=>sum+(Number(row[15])||0),0)]
   ];
 
   const ws=XLSX.utils.aoa_to_sheet(sheetData);
@@ -472,23 +596,24 @@ function buildWorkbookBlob(){
   const lastDataRow=tableHeaderRow+dataRows.length;
 
   if(dataRows.length>0){
-    // Make Final Manpower an Excel SUM of the activity Labour column.
+    // Final Manpower = SUM of activity Labour column O.
     const finalRow=sheetData.length;
     const finalCell='B'+finalRow;
-    ws[finalCell]={t:'n',f:'SUM(L'+firstDataRow+':L'+lastDataRow+')',v:dataRows.reduce((sum,row)=>sum+(Number(row[11])||0),0)};
+    ws[finalCell]={
+      t:'n',
+      f:'SUM(O'+firstDataRow+':O'+lastDataRow+')',
+      v:dataRows.reduce((sum,row)=>sum+(Number(row[15])||0),0)
+    };
   }
 
-  // Auto-fit columns from the longest value in each column.
-  const widthData=headers.slice();
-  const colWidths=widthData.map((h,idx)=>{
+  const colWidths=headers.map((h,idx)=>{
     let max=String(h).length;
     dataRows.forEach(row=>{
       const val=row[idx]===undefined||row[idx]===null?'':String(row[idx]);
       if(val.length>max) max=val.length;
     });
-    return {wch:Math.min(Math.max(max+2,8),50)};
+    return {wch:Math.min(Math.max(max+2,10),50)};
   });
-  // Give the summary label/value columns enough space.
   colWidths[0].wch=Math.max(colWidths[0].wch,18);
   colWidths[1].wch=Math.max(colWidths[1].wch,24);
   ws['!cols']=colWidths;
@@ -540,9 +665,14 @@ function startEdit(r){
   document.getElementById('level').value=r.level;
   areaType.value=r.areaType;
   updateAreaDetailField();
-  setAreaDetailValue(r.areaDetail);
+  setAreaDetailValue(r.areaDetail,r.areaDetailExtra);
 
   document.getElementById('workers').value=r.workers;
+  quantityEl.value=(r.quantity===undefined?'':r.quantity);
+  unitEl.value=r.unit||'';
+  specificationEl.value=r.specification||'';
+  unitEl.dataset.auto='0';
+  updateMeasurementDefaults();
 
   document.getElementById('formHeading').textContent='Edit Activity';
   document.getElementById('addBtn').textContent='Update Activity';
@@ -566,6 +696,12 @@ function clearForm(){
   refreshActivityOptions();
   activityDetailEl.value='';
   document.getElementById('workers').value='';
+  quantityEl.value='';
+  unitEl.value='';
+  unitEl.dataset.auto='0';
+  specificationEl.value='';
+  updateMeasurementDefaults();
+  areaDetailExtraInput.value='';
 }
 
 function render(){
@@ -582,7 +718,7 @@ function render(){
   }
 
   rows.forEach(r=>{
-    const area=areaLabel(r.areaType,r.areaDetail);
+    const area=areaLabel(r.areaType,r.areaDetail,r.areaDetailExtra);
     const activity=activityLabel(r.activityType,r.activityDetail);
 
     const row=document.createElement('div');
@@ -598,7 +734,7 @@ function render(){
 
     const nums=document.createElement('div');
     nums.className='act-nums';
-    nums.textContent=r.workers+' Labours · '+r.mh+' MH';
+    nums.textContent=r.quantity+' '+r.unit+' · '+r.specification+' · '+r.workers+' Labours · '+r.mh+' MH';
 
     const btns=document.createElement('div');
     btns.className='act-btns';
@@ -635,7 +771,7 @@ function render(){
 
     const p=document.createElement('div');
     p.className='prev-item';
-    p.textContent=r.discipline+' | '+r.masterClass+' | '+r.tower+' | '+r.level+' | '+area+' | '+activity+' | '+r.workers+' Labours | '+r.mh+' MH';
+    p.textContent=r.discipline+' | '+r.masterClass+' | '+r.tower+' | '+r.level+' | '+area+' | '+activity+' | '+r.quantity+' '+r.unit+' | '+r.specification+' | '+r.workers+' Labours | '+r.mh+' MH';
     prev.appendChild(p);
   });
   if(remarks.value.trim()){
@@ -649,8 +785,12 @@ function render(){
 
 disciplineEl.addEventListener('change', refreshMasterClassOptions);
 masterClassEl.addEventListener('change', refreshActivityOptions);
-activityTypeEl.addEventListener('change', updateActivityDetailField);
+activityTypeEl.addEventListener('change', function(){
+  updateActivityDetailField();
+  updateMeasurementDefaults();
+});
 areaType.addEventListener('change', updateAreaDetailField);
+unitEl.addEventListener('change', function(){unitEl.dataset.auto='0';});
 
 document.getElementById('addBtn').addEventListener('click', function(){
   const discipline=disciplineEl.value;
@@ -659,9 +799,13 @@ document.getElementById('addBtn').addEventListener('click', function(){
   const level=document.getElementById('level').value;
   const aType=areaType.value;
   const aDetail=getAreaDetailValue();
+  const aDetailExtra=getAreaDetailExtraValue();
   const actType=activityTypeEl.value;
   const actDetail=activityDetailEl.value.trim();
   const workers=Number(document.getElementById('workers').value);
+  const quantity=Number(quantityEl.value);
+  const unit=unitEl.value;
+  const specification=specificationEl.value.trim();
 
   if(!discipline){alert('Please select a Discipline.');return;}
   if(!masterClass){alert('Please select a Master Class.');return;}
@@ -670,9 +814,15 @@ document.getElementById('addBtn').addEventListener('click', function(){
   if(AREA_DETAIL_CONFIG[aType]&&!aDetail){
     alert('Please provide the '+AREA_DETAIL_CONFIG[aType].label+'.');return;
   }
+  if(AREA_DETAIL_CONFIG[aType]&&AREA_DETAIL_CONFIG[aType].secondary&&AREA_DETAIL_CONFIG[aType].secondary.required&&!aDetailExtra){
+    alert('Please provide the '+AREA_DETAIL_CONFIG[aType].secondary.label+'.');return;
+  }
   if(!actType){alert('Please select an Activity.');return;}
   if(actType==='Others'&&!actDetail){alert('Please specify the activity.');return;}
   if(!(workers>=1)){alert('Please enter at least 1 Labour.');return;}
+  if(!(quantity>0)){alert('Please enter the work quantity.');return;}
+  if(!unit){alert('Please select the work unit.');return;}
+  if(!specification){alert('Please enter the Size / Specification.');return;}
 
   if(editingId!==null){
     const r=rows.find(x=>x.id===editingId);
@@ -690,9 +840,9 @@ document.getElementById('addBtn').addEventListener('click', function(){
   rows.push({
     id:Date.now()+Math.random(),
     discipline,masterClass,tower,level,
-    areaType:aType,areaDetail:aDetail,
+    areaType:aType,areaDetail:aDetail,areaDetailExtra:aDetailExtra,
     activityType:actType,activityDetail:actType==='Others'?actDetail:'',
-    workers,mh:workers*8
+    workers,mh:workers*8,quantity,unit,specification
   });
   clearForm();
   render();
@@ -758,7 +908,7 @@ function silentSync(){
     attendance:a.value,chargeInHand:cih.value,absent:absent.value,
     rows:rows.map(r=>({
       ...r,
-      area:areaLabel(r.areaType,r.areaDetail),
+      area:areaLabel(r.areaType,r.areaDetail,r.areaDetailExtra),
       activity:activityLabel(r.activityType,r.activityDetail)
     }))
   };
@@ -855,6 +1005,17 @@ function initApp(){
               r.areaType='Others';
               r.areaDetail=r.area||'';
             }
+            if(r.areaDetailExtra===undefined){
+              r.areaDetailExtra='';
+              // Preserve older Flat rows that previously stored the flat number as areaDetail.
+              if(r.areaType==='Flat' && /^\\d+[A-Za-z]?$/.test(String(r.areaDetail||'').trim())){
+                r.areaDetailExtra=String(r.areaDetail).trim();
+                r.areaDetail='Other';
+              }
+            }
+            if(r.quantity===undefined) r.quantity=1;
+            if(r.unit===undefined) r.unit='Lots';
+            if(r.specification===undefined) r.specification='N/A';
             // migrate rows saved before Master Class / Activity dropdown existed
             if(r.masterClass===undefined){
               r.masterClass='Unclassified — please Edit and reclassify';
@@ -876,6 +1037,7 @@ function initApp(){
   }
   refreshMasterClassOptions();
   updateAreaDetailField();
+  updateMeasurementDefaults();
   updateSubmissionNotice();
   render();
 }
