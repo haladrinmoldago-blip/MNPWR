@@ -1,0 +1,1137 @@
+<!-- Trigger GitHub Pages redeployment -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>J82 Daily Manpower Reporting</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padding:12px;font-size:15px}
+.container{max-width:860px}
+.page-head{border-bottom:2px solid #444;padding-bottom:10px;margin-bottom:18px}
+.page-head h1{font-size:20px;font-weight:600;margin:0}
+.page-head .sub{font-size:13px;color:#6c757d;margin-top:2px}
+.panel{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:14px;margin-bottom:14px}
+.panel h2{font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#495057;margin:0 0 10px}
+.form-label{font-size:12px;color:#6c757d;margin-bottom:2px}
+.form-control,.form-select{font-size:15px;border-radius:3px}
+.btn{border-radius:3px;font-weight:500}
+.act-row{border:1px solid #e0e0e0;border-radius:3px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.act-row.editing{border-color:#0d6efd;background:#f2f7ff}
+.act-main{font-weight:600;font-size:15px}
+.act-sub{font-size:13px;color:#6c757d;margin-top:2px}
+.act-nums{font-size:13px;color:#212529;margin-top:4px}
+.act-btns{margin-top:8px}
+.act-btns .btn{font-size:12px;padding:3px 10px;margin-right:6px}
+.kpi{background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:10px;text-align:center}
+.kpi .lbl{font-size:12px;color:#6c757d}
+.kpi .val{font-size:22px;font-weight:600;margin-top:2px}
+.kpi.neg .val{color:#b02a37}
+.prev-item{border-bottom:1px solid #eee;padding:6px 0;font-size:13px}
+.prev-item:last-child{border-bottom:none}
+.empty{color:#adb5bd;font-size:13px;font-style:italic}
+.footer{text-align:center;color:#adb5bd;font-size:12px;margin-top:20px}
+#loginGate{position:fixed;inset:0;background:#f7f7f8;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+#loginGate .box{background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:24px;max-width:340px;width:100%}
+#loginGate h2{font-size:16px;font-weight:600;margin:0 0 4px;text-transform:none;letter-spacing:normal}
+#loginGate .sub{font-size:13px;color:#6c757d;margin-bottom:16px}
+#loginError{font-size:13px;color:#b02a37;margin-top:8px;display:none}
+</style>
+</head>
+<body>
+
+<div id="loginGate">
+  <div class="box">
+    <h2>Sign In</h2>
+    <div class="sub">Enter your name and PIN to continue.</div>
+    <label class="form-label" for="loginName">Name</label>
+    <input id="loginName" class="form-control mb-2" placeholder="Your name" autocomplete="off">
+    <label class="form-label" for="loginPin">PIN</label>
+    <input id="loginPin" type="password" inputmode="numeric" class="form-control mb-2" placeholder="PIN" autocomplete="off">
+    <button id="loginBtn" class="btn btn-primary w-100 mt-2">Continue</button>
+    <div id="loginError">Name or PIN not recognized. Check with your manager.</div>
+  </div>
+</div>
+<div class="container" id="appContainer" style="display:none">
+
+  <div class="page-head">
+    <h1 id="appTitle">J82 Daily Manpower Reporting</h1>
+    <div class="sub">Where &middot; What &middot; How Many</div>
+  </div>
+
+  <div id="storageNotice" class="alert alert-warning py-2 d-none" role="alert" style="font-size:13px">
+    Auto-save isn't available in this window, so entries won't be saved if you close it. Open the page directly in your browser for auto-save to work.
+  </div>
+
+  <div class="panel">
+    <h2>Report Details</h2>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label" for="date">Date</label>
+        <input id="date" type="date" class="form-control">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="foreman">Foreman</label>
+        <input id="foreman" class="form-control" placeholder="Name" readonly>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="attendance">Total Manpower</label>
+        <input id="attendance" type="number" min="0" class="form-control" placeholder="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 id="formHeading">Add Activity</h2>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <label class="form-label" for="discipline">Discipline</label>
+        <select id="discipline" class="form-select">
+          <option value="" disabled selected>Select</option>
+          <option>HVAC</option>
+          <option>Plumbing</option>
+          <option>Electrical</option>
+          <option>Modular</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="masterClass">Master Class</label>
+        <select id="masterClass" class="form-select">
+          <option value="" disabled selected>Select Discipline first</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="tower">Tower</label>
+        <select id="tower" class="form-select">
+          <option value="" disabled selected>Select</option>
+          <option>Tower A</option>
+          <option>Tower B</option>
+          <option>Tower C</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="level">Level</label>
+        <select id="level" class="form-select">
+          <option value="" disabled selected>Select</option>
+          <option>BF</option><option>GF</option><option>PF</option>
+          <option>L1</option><option>L2</option><option>L3</option><option>L4</option>
+          <option>L5</option><option>L6</option><option>L7</option><option>L8</option>
+          <option>L9</option><option>L10</option><option>L11</option><option>L12</option>
+          <option>L13</option><option>L14</option><option>L15</option><option>L16</option>
+          <option>L17</option><option>L18</option><option>L19</option><option>RF</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="areaType">Area</label>
+        <select id="areaType" class="form-select">
+          <option value="" disabled selected>Select</option>
+          <option>Flat</option>
+          <option>Staircase</option>
+          <option>Corridor</option>
+          <option>Common Area</option>
+          <option>External</option>
+          <option>Facade</option>
+          <option>Service Room</option>
+          <option>Others</option>
+        </select>
+      </div>
+      <div class="col-md-4" id="areaDetailWrap" style="display:none">
+        <label class="form-label" for="areaDetail" id="areaDetailLabel">Detail</label>
+        <input id="areaDetail" class="form-control" placeholder="">
+        <select id="areaDetailSelect" class="form-select" style="display:none"></select>
+        <div id="areaDetailExtraWrap" class="mt-2" style="display:none">
+          <label class="form-label" for="areaDetailExtra" id="areaDetailExtraLabel">Reference</label>
+          <input id="areaDetailExtra" class="form-control" placeholder="">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="activityType">Activity</label>
+        <select id="activityType" class="form-select">
+          <option value="" disabled selected>Select Master Class first</option>
+        </select>
+      </div>
+      <div class="col-md-4" id="activityDetailWrap" style="display:none">
+        <label class="form-label" for="activityDetail">Specify Activity</label>
+        <input id="activityDetail" class="form-control" placeholder="Type the activity">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="workers">Labours</label>
+        <input id="workers" type="number" min="1" class="form-control" placeholder="0">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="quantity">Work Quantity</label>
+        <input id="quantity" type="number" min="0.01" step="0.01" class="form-control" placeholder="e.g. 20">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="unit">Unit</label>
+        <select id="unit" class="form-select">
+          <option value="" disabled selected>Select Unit</option>
+          <option>Meters</option>
+          <option>m²</option>
+          <option>m³</option>
+          <option>Nos</option>
+          <option>Points</option>
+          <option>Sets</option>
+          <option>Tests</option>
+          <option>Lots</option>
+          <option>Kg</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="specification">Size / Specification</label>
+        <input id="specification" class="form-control" placeholder='e.g. 3&quot; / 4C x 16mm² / 500x300mm'>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Measurement Example</label>
+        <div id="measurementHint" class="form-control-plaintext text-muted" style="font-size:13px;padding-top:7px">e.g. 20 Meters · 3&quot;</div>
+      </div>
+    </div>
+    <div class="mt-3">
+      <button id="addBtn" class="btn btn-primary">Add Activity</button>
+      <button id="cancelEditBtn" class="btn btn-outline-secondary d-none">Cancel</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Activities (<span id="activityCount">0</span>)</h2>
+    <div id="activityList"></div>
+  </div>
+
+  <div class="row g-2 mb-3">
+    <div class="col-4"><div class="kpi"><div class="lbl">Manpower MH</div><div class="val" id="attendanceMH">0</div></div></div>
+    <div class="col-4"><div class="kpi"><div class="lbl">Allocated MH</div><div class="val" id="allocatedMH">0</div></div></div>
+    <div class="col-4"><div class="kpi" id="balanceKpi"><div class="lbl">Balance MH</div><div class="val" id="balanceMH">0</div></div></div>
+  </div>
+
+  <div id="manpowerWarning" class="alert alert-danger py-2 d-none" role="alert" style="font-size:13px">
+    <strong>Warning:</strong> Allocated manpower hours exceed available manpower hours by <span id="negativeBalanceMH">0</span> MH.
+  </div>
+
+  <div class="panel">
+    <h2>Day Summary</h2>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <label class="form-label" for="cih">Charge in Hand</label>
+        <input id="cih" type="number" min="0" class="form-control" placeholder="0">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="absent">Total Absent</label>
+        <input id="absent" type="number" min="0" class="form-control" placeholder="0">
+      </div>
+    </div>
+    <div class="mt-2">
+      <label class="form-label" for="remarks">Remarks</label>
+      <textarea id="remarks" class="form-control" rows="3" placeholder="Add any remarks or comments"></textarea>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Report Preview</h2>
+    <div id="reportPreview"></div>
+  </div>
+
+  <div id="submissionNotice" class="alert alert-warning py-2" role="alert" style="font-size:13px">
+    <strong>Final Review:</strong> Before submission, kindly recheck the report for final review. Please export the report before submitting/sharing it.
+  </div>
+  <div id="actionStatus" class="alert alert-success py-2 d-none" role="alert" style="font-size:13px"></div>
+
+  <div class="d-grid gap-2">
+    <button id="shareBtn" class="btn btn-primary">Submit / Share Report</button>
+    <button id="exportBtn" class="btn btn-outline-secondary">Export Excel</button>
+    <button id="clearBtn" class="btn btn-outline-danger">Clear Draft</button>
+  </div>
+
+  <div class="footer" id="appFooter">J82 Hills Edge Daily Reporting</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+// ============================================================
+// CLONING THIS APP FOR A NEW PROJECT/SITE?
+// Change only these lines. SHEET_WEBAPP_URL must point to that
+// project's OWN Google Sheet, not this one.
+// ============================================================
+const PROJECT_CODE='J82';
+const SITE_NAME='Hills Edge';
+const SHEET_WEBAPP_URL='https://script.google.com/macros/s/AKfycbwjABmd9F5fHAyGgnGzuJdI6vHSWotHwbI8-h5v-R_xcTeJ3Lgbvvs0rWmhoo0TnVZt2A/exec';
+
+// ============================================================
+// MASTER CLASS -> ACTIVITY DATA
+// Discipline -> Master Class -> list of Activities.
+// "Others" is appended automatically at the Activity level.
+// ============================================================
+const MASTER_DATA = {
+  "Electrical": {
+    "Containment Installation": ["Wall Marking", "Wall Conduiting", "GI Box Installation / Fixing", "Cable Tray/ tray Installation", "Surface Containment", "Floor conduiting", "GI Conduiting", "Fabrication for conduits (bending & joining etc)", "Junction Box Opening", "Welding Works", "DB / ONU Enclosure Fixing"],
+    "Cable Pulling & Wiring": ["Cable Pulling", "Wire Pulling high level", "low level Wiring", "Ceiling rose installation", "FCU/ Water Heater control box installation and termination", "Busbar Riser Installation"],
+    "DB, SMDB & Panels": ["DB Installation", "SMDB/MCC/EMCC/EMDB Installation", "LV Panel/Capacitor Bank Installation", "DB/SMDB Dressing works", "Glanding & Termination Works", "LCP Panel Installation"],
+    "ELV & Fire Alarm Works": ["Fire Alarm Cabling", "Fire Alarm Device Installation", "KNX Cabling works", "BMS Wiring", "Fire Panel Enclosure Installation"],
+    "Electrical Final Fix": ["Light Fixture Installation", "Wiring Accessories Installation ( Switch Socket / Data Outlet / Thermostat )", "Motion Sensor Installation", "Strip LED Light installation"],
+    "Earthing & Lightning Protection": ["Earth Pit Installation", "Earth Rod Fixing", "Earth Bar Installation", "Lightning Arrestor/Rod", "Earth Cable Pulling"],
+    "Slab & Builder's Work": ["Slab Works", "Column Works"],
+    "Electrical Testing & Commissioning": ["Circuit Continuity Test", "Insulation Resistance Test", "DB / SMDB Termination Test", "Functional Testing"],
+    "Rectification & Maintenance": ["Rectification Works", "Snag Clearing", "Box Cleaning", "Conduit Checking / Box Clearing", "Protection Works", "Maintenance Works", "Housekeeping"],
+    "Store & Material Handling": ["Store Work", "Material Receiving", "Material Shifting", "Material Segregation"]
+  },
+  "Plumbing": {
+    "Slab & Builder's Work": ["Slab works", "Puddle Flange Fixing", "Floor Trap Fixing", "Column works", "Wall/Slab Marking"],
+    "Drainage Piping": ["Drainage High Level Piping", "Drainage Low Level Piping", "HDPE Piping", "HDPE Welding / Jointing", "Floor Drain Point Installation", "Balcony Drain Piping", "Rain Water Piping", "Vent Piping", "Laundry Drain Piping", "Wash Basin Drain Piping", "Sink Drain Piping", "Storm Water Piping", "Floor Trap Installation", "Drainage Gravity Testing"],
+    "Condensate Drain Piping (CDP)": ["CDP Piping", "CDP Insulation", "CDP Pipe Connections"],
+    "Water Supply Piping": ["Marking and Support Installation", "PPR Piping", "Pressure Testing", "PEX Marking", "PEX Piping", "PEX Elbow Fixing", "Valves Installation", "Pipe Final Connection", "Flush Tank Installation"],
+    "Riser Installation": ["HDPE Riser Piping", "Drainage Riser Vent Piping", "Rain Water Riser Piping", "Water Supply Riser Piping", "Riser Supporting & Clamping"],
+    "Sanitary Fixtures & Accessories": ["Wash Basin Installation", "Water Closet Installation", "Bidet Spray Installation", "Shower Installation", "Concealed Cistern Installation", "Sanitary Accessories Installation"],
+    "Plumbing Equipment Installation": ["Water Heater Installation", "GRP Tank Installation", "Domestic Water Pump Installation", "Sump Pump Installation"],
+    "Testing & Commissioning": ["Drainage Gravity Testing", "Drainage High Level Testing", "Water Supply Pressure Testing", "Riser Testing", "Flushing & Chlorination"],
+    "General Plumbing Work": ["Pipe Protection / Plastic Covering"],
+    "Plumbing Rectification": ["PPR Rectification", "Drainage Rectification", "Vent Pipe Rectification", "Comment Rectification", "Pipe Shifting", "Rework"],
+    "Cleaning & Housekeeping": ["Store Work", "Housekeeping", "Pipe Cleaning", "Material Shifting"]
+  },
+  "HVAC": {
+    "Duct Fabrication, Supports & Marking": ["Duct Opening Marking", "Duct Support Fabrication", "Duct Fabrication", "Duct Insulation", "Duct Marking & Supporting", "Sleeve Cutting", "Ring Fixing", "Support Cutting", "Core Cutting"],
+    "Ductwork & Dampers Installation": ["Riser Duct Installation", "Riser Duct Connection", "GI Duct Installation", "PI Duct Installation", "Flexible Duct Connection", "Plenum Box Installation", "Mouth Piece Installation", "VCD Installation", "Fire Damper Installation", "Shoe Collar Installation"],
+    "Air Outlets Installation": ["Grill Installation", "Diffuser Installation", "Access Door Marking"],
+    "CHW Piping": ["CHW Pipe Marking and Supporting", "CHW High Level Piping", "CHW Riser Piping", "CHW Pipe Jointing", "CHW Pipe Welding", "CHW Pipe Insulation", "CHW Valve Package Installation", "Pressure Testing"],
+    "FCU Installation": ["FCU Shifting", "FCU Installation", "FCU Connection to Duct / Valve Package"],
+    "Fans Installation": ["Smoke Extraction Fan Installation", "Stair Pressurisation Fan Installation", "Makeup Air Fan Installation", "Fan Duct Connection"],
+    "BTU Meters": ["BTU Meter Installation"],
+    "HVAC Rectification & Finishing": ["Duct Finishing", "Duct Rectification", "CHW Piping Rectification", "Comment Clearing", "Duct Cleaning", "Duct Protection", "CHW Pipe Protection"],
+    "Store & Material Handling": ["Duct Shifting & Segregation", "Material Shifting"]
+  },
+  "Modular": {
+    "Modular Works": ["Modular Support installation", "Modular shifting", "Modular installation", "Modular jointing works"]
+  }
+};
+
+
+const KEY='J82_V10';
+const rows=[];
+let editingId=null;
+
+const d=document.getElementById('date');
+const f=document.getElementById('foreman');
+const a=document.getElementById('attendance');
+const cih=document.getElementById('cih');
+const absent=document.getElementById('absent');
+const remarks=document.getElementById('remarks');
+const disciplineEl=document.getElementById('discipline');
+const masterClassEl=document.getElementById('masterClass');
+const activityTypeEl=document.getElementById('activityType');
+const activityDetailWrap=document.getElementById('activityDetailWrap');
+const activityDetailEl=document.getElementById('activityDetail');
+const areaType=document.getElementById('areaType');
+const areaDetailWrap=document.getElementById('areaDetailWrap');
+const areaDetailLabel=document.getElementById('areaDetailLabel');
+const areaDetailInput=document.getElementById('areaDetail');
+const areaDetailSelect=document.getElementById('areaDetailSelect');
+const areaDetailExtraWrap=document.getElementById('areaDetailExtraWrap');
+const areaDetailExtraLabel=document.getElementById('areaDetailExtraLabel');
+const areaDetailExtraInput=document.getElementById('areaDetailExtra');
+const quantityEl=document.getElementById('quantity');
+const unitEl=document.getElementById('unit');
+const specificationEl=document.getElementById('specification');
+const measurementHint=document.getElementById('measurementHint');
+
+d.value=new Date().toISOString().split('T')[0];
+document.title=PROJECT_CODE+' Daily Manpower Reporting';
+document.getElementById('appTitle').textContent=PROJECT_CODE+' Daily Manpower Reporting';
+document.getElementById('appFooter').textContent=PROJECT_CODE+' '+SITE_NAME+' Daily Reporting';
+
+// Area types that need an extra detail value
+const AREA_DETAIL_CONFIG={
+  'Flat':{
+    type:'select',
+    label:'Flat Type',
+    options:['Studio','1BHK','2BHK','3BHK','4BHK','5BHK','Duplex','Penthouse','Other'],
+    secondary:{label:'Flat Number',placeholder:'e.g. 205',required:true}
+  },
+  'Staircase':{
+    type:'text',
+    label:'Staircase Number',
+    placeholder:'e.g. 2'
+  },
+  'Common Area':{
+    type:'select',
+    label:'Common Area Type',
+    options:['Lobby','Corridor','Lift Lobby','Stair Lobby','Parking','Amenity','Gym','Pool','Clubhouse','Service Area','Other']
+  },
+  'External':{
+    type:'select',
+    label:'External Area Type',
+    options:['Road','Footpath','Landscape','Boundary','Entrance','Parking','External Services','Other']
+  },
+  'Facade':{
+    type:'text',
+    label:'Mention',
+    placeholder:'e.g. North Elevation / Podium / Tower A Facade'
+  },
+  'Service Room':{
+    type:'select',
+    label:'Service Room',
+    options:['LV Room','Substation','Telephone / GSM Room','Electrical Room','Water Meter Room','Store']
+  },
+  'Others':{
+    type:'text',
+    label:'Specify Area',
+    placeholder:'Type the area'
+  }
+};
+
+function populateSelect(sel, items, placeholder){
+  sel.innerHTML='';
+  const ph=document.createElement('option');
+  ph.value='';ph.disabled=true;ph.selected=true;ph.textContent=placeholder;
+  sel.appendChild(ph);
+  items.forEach(function(it){
+    const o=document.createElement('option');
+    o.value=it;o.textContent=it;
+    sel.appendChild(o);
+  });
+}
+
+function refreshMasterClassOptions(){
+  const disc=disciplineEl.value;
+  const classes=(disc&&MASTER_DATA[disc])?Object.keys(MASTER_DATA[disc]):[];
+  populateSelect(masterClassEl, classes, disc?'Select':'Select Discipline first');
+  refreshActivityOptions();
+}
+
+function refreshActivityOptions(){
+  const disc=disciplineEl.value;
+  const mc=masterClassEl.value;
+  const base=(disc&&mc&&MASTER_DATA[disc]&&MASTER_DATA[disc][mc])?MASTER_DATA[disc][mc].slice():[];
+  if(disc&&mc) base.push('Others');
+  populateSelect(activityTypeEl, base, mc?'Select':'Select Master Class first');
+  updateActivityDetailField();
+}
+
+function updateActivityDetailField(){
+  if(activityTypeEl.value==='Others'){
+    activityDetailWrap.style.display='';
+  }else{
+    activityDetailWrap.style.display='none';
+    activityDetailEl.value='';
+  }
+}
+
+function updateAreaDetailField(){
+  const cfg=AREA_DETAIL_CONFIG[areaType.value];
+  if(!cfg){
+    areaDetailWrap.style.display='none';
+    areaDetailExtraWrap.style.display='none';
+    areaDetailInput.value='';
+    areaDetailExtraInput.value='';
+    areaDetailSelect.innerHTML='';
+    return;
+  }
+
+  areaDetailWrap.style.display='';
+  areaDetailLabel.textContent=cfg.label;
+  if(cfg.type==='select'){
+    areaDetailInput.style.display='none';
+    areaDetailSelect.style.display='';
+    if(areaDetailSelect.dataset.builtFor!==areaType.value){
+      populateSelect(areaDetailSelect, cfg.options, 'Select');
+      areaDetailSelect.dataset.builtFor=areaType.value;
+    }
+  }else{
+    areaDetailSelect.style.display='none';
+    areaDetailInput.style.display='';
+    areaDetailInput.placeholder=cfg.placeholder||'';
+  }
+
+  if(cfg.secondary){
+    areaDetailExtraWrap.style.display='';
+    areaDetailExtraLabel.textContent=cfg.secondary.label;
+    areaDetailExtraInput.placeholder=cfg.secondary.placeholder||'';
+  }else{
+    areaDetailExtraWrap.style.display='none';
+    areaDetailExtraInput.value='';
+  }
+}
+
+function getAreaDetailValue(){
+  const cfg=AREA_DETAIL_CONFIG[areaType.value];
+  if(!cfg) return '';
+  return cfg.type==='select' ? areaDetailSelect.value : areaDetailInput.value.trim();
+}
+
+function getAreaDetailExtraValue(){
+  return areaDetailExtraInput.value.trim();
+}
+
+function setAreaDetailValue(primary,extra){
+  const cfg=AREA_DETAIL_CONFIG[areaType.value];
+  if(!cfg) return;
+  if(cfg.type==='select') areaDetailSelect.value=primary||'';
+  else areaDetailInput.value=primary||'';
+  areaDetailExtraInput.value=extra||'';
+}
+
+function areaLabel(type,detail,extra){
+  if(!type) return '';
+  if(type==='Flat'){
+    const t=detail||'Flat';
+    return 'Flat '+t+(extra?' - '+extra:'');
+  }
+  if(type==='Staircase') return 'Staircase '+(detail||'');
+  if(type==='Service Room') return detail||'Service Room';
+  if(type==='Common Area') return 'Common Area - '+(detail||'');
+  if(type==='External') return 'External - '+(detail||'');
+  if(type==='Facade') return 'Facade - '+(detail||'');
+  if(type==='Others') return detail||'Others';
+  return type;
+}
+
+function measurementDefault(activity){
+  const s=String(activity||'').toLowerCase();
+  if(/ppr|pex|hdpe|drainage .*piping|water supply|pipe|piping|conduit|conduiting|cable pulling|wire pulling|busbar riser|cable tray|tray installation|trunking|containment/.test(s)){
+    return {unit:'Meters',hint:'e.g. 20 Meters · 3&quot;'};
+  }
+  if(/light fixture|wiring accessories|motion sensor|strip led|earth pit|earth rod|earth bar|lightning arrestor|db installation|smdb|panel installation|fc[u] installation|fan installation|bt[u] meter|fixture|valve installation|floor trap|water closet|wash basin/.test(s)){
+    return {unit:'Nos',hint:'e.g. 12 Nos · 18W'};
+  }
+  if(/testing|test$/.test(s)){
+    return {unit:'Tests',hint:'e.g. 4 Tests · IR / Continuity'};
+  }
+  if(/housekeeping|store work|material receiving|material shifting|segregation|rework/.test(s)){
+    return {unit:'Lots',hint:'e.g. 1 Lot · Area / Material'};
+  }
+  return {unit:'',hint:'e.g. 20 Meters · 3&quot;'};
+}
+
+function updateMeasurementDefaults(){
+  const def=measurementDefault(activityTypeEl.value);
+  if(def.unit && (!unitEl.value || unitEl.dataset.auto==='1')){
+    unitEl.value=def.unit;
+    unitEl.dataset.auto='1';
+  }
+  measurementHint.innerHTML=def.hint;
+}
+
+function activityLabel(type,detail){
+  if(!type) return '';
+  if(type==='Others') return detail||'Others';
+  return type;
+}
+
+function storageSupported(){
+  try{
+    const t='__J82_STORAGE_TEST__';
+    window.localStorage.setItem(t,'1');
+    window.localStorage.removeItem(t);
+    return true;
+  }catch(e){return false;}
+}
+const hasStorage=storageSupported();
+if(!hasStorage){document.getElementById('storageNotice').classList.remove('d-none');}
+
+function sessionStorageSupported(){
+  try{
+    const t='__J82_SESSION_TEST__';
+    window.sessionStorage.setItem(t,'1');
+    window.sessionStorage.removeItem(t);
+    return true;
+  }catch(e){return false;}
+}
+const hasSession=sessionStorageSupported();
+let currentForemanName='';
+let currentForemanPin='';
+let reportExported=false;
+let reportSubmitted=false;
+
+function save(){
+  if(!hasStorage) return;
+  try{
+    localStorage.setItem(KEY,JSON.stringify({
+      rows,date:d.value,foreman:f.value,attendance:a.value,
+      cih:cih.value,absent:absent.value,remarks:remarks.value,
+      reportExported,reportSubmitted
+    }));
+  }catch(e){}
+}
+
+function sanitizeFilePart(s){
+  const cleaned=String(s||'').trim().replace(/[^a-zA-Z0-9-]+/g,'_').replace(/^_+|_+$/g,'');
+  return cleaned||'Unknown';
+}
+
+function buildWorkbookBlob(){
+  // Activity rows contain only activity-specific data.
+  // Daily summary values remain as summary rows below the table.
+  const headers=[
+    'Project','Date','Foreman','Discipline','Master Class','Tower','Level',
+    'Area Type','Area Sub Type','Area Reference','Area','Activity',
+    'Quantity','Unit','Size / Specification','Labours','Man Hours'
+  ];
+
+  const dataRows=rows.map(r=>[
+    PROJECT_CODE,d.value,f.value,
+    r.discipline,r.masterClass,r.tower,r.level,
+    r.areaType,r.areaDetail||'',r.areaDetailExtra||'',
+    areaLabel(r.areaType,r.areaDetail,r.areaDetailExtra),
+    activityLabel(r.activityType,r.activityDetail),
+    r.quantity,r.unit,r.specification||'',
+    r.workers,r.mh
+  ]);
+
+  const sheetData=[
+    ['Project',PROJECT_CODE],
+    ['Date',d.value],
+    ['Foreman',f.value],
+    ['Total Manpower',a.value],
+    ['Remarks',remarks.value||''],
+    [],
+    headers,
+    ...dataRows,
+    [],
+    ['Charge in Hand',cih.value||0],
+    ['Total Absent',absent.value||0],
+    ['Final Manpower',dataRows.reduce((sum,row)=>sum+(Number(row[15])||0),0)]
+  ];
+
+  const ws=XLSX.utils.aoa_to_sheet(sheetData);
+  const tableHeaderRow=7; // 1-based Excel row containing activity headers
+  const firstDataRow=tableHeaderRow+1;
+  const lastDataRow=tableHeaderRow+dataRows.length;
+
+  if(dataRows.length>0){
+    // Final Manpower = SUM of activity Labour column O.
+    const finalRow=sheetData.length;
+    const finalCell='B'+finalRow;
+    ws[finalCell]={
+      t:'n',
+      f:'SUM(O'+firstDataRow+':O'+lastDataRow+')',
+      v:dataRows.reduce((sum,row)=>sum+(Number(row[15])||0),0)
+    };
+  }
+
+  const colWidths=headers.map((h,idx)=>{
+    let max=String(h).length;
+    dataRows.forEach(row=>{
+      const val=row[idx]===undefined||row[idx]===null?'':String(row[idx]);
+      if(val.length>max) max=val.length;
+    });
+    return {wch:Math.min(Math.max(max+2,10),50)};
+  });
+  colWidths[0].wch=Math.max(colWidths[0].wch,18);
+  colWidths[1].wch=Math.max(colWidths[1].wch,24);
+  ws['!cols']=colWidths;
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Report');
+  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  return new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function xlsxFilename(){
+  return PROJECT_CODE+'_Manpower_Report_'+sanitizeFilePart(d.value)+'_'+sanitizeFilePart(f.value)+'.xlsx';
+}
+
+function totals(){
+  const att=Math.max(0,Number(a.value)||0)*8;
+  const alloc=rows.reduce((s,r)=>s+r.mh,0);
+  const bal=att-alloc;
+  document.getElementById('attendanceMH').textContent=att;
+  document.getElementById('allocatedMH').textContent=alloc;
+  document.getElementById('balanceMH').textContent=bal;
+  document.getElementById('balanceKpi').classList.toggle('neg',bal<0);
+
+  const warning=document.getElementById('manpowerWarning');
+  const negativeBalance=document.getElementById('negativeBalanceMH');
+  if(bal<0){
+    negativeBalance.textContent=Math.abs(bal);
+    warning.classList.remove('d-none');
+  }else{
+    warning.classList.add('d-none');
+  }
+
+  document.getElementById('activityCount').textContent=rows.length;
+  save();
+}
+
+function startEdit(r){
+  editingId=r.id;
+
+  disciplineEl.value=r.discipline;
+  refreshMasterClassOptions();
+  masterClassEl.value=r.masterClass;
+  refreshActivityOptions();
+  activityTypeEl.value=r.activityType;
+  updateActivityDetailField();
+  activityDetailEl.value=r.activityDetail||'';
+
+  document.getElementById('tower').value=r.tower;
+  document.getElementById('level').value=r.level;
+  areaType.value=r.areaType;
+  updateAreaDetailField();
+  setAreaDetailValue(r.areaDetail,r.areaDetailExtra);
+
+  document.getElementById('workers').value=r.workers;
+  quantityEl.value=(r.quantity===undefined?'':r.quantity);
+  unitEl.value=r.unit||'';
+  specificationEl.value=r.specification||'';
+  unitEl.dataset.auto='0';
+  updateMeasurementDefaults();
+
+  document.getElementById('formHeading').textContent='Edit Activity';
+  document.getElementById('addBtn').textContent='Update Activity';
+  document.getElementById('cancelEditBtn').classList.remove('d-none');
+  render();
+  document.getElementById('formHeading').scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function exitEdit(){
+  editingId=null;
+  document.getElementById('formHeading').textContent='Add Activity';
+  document.getElementById('addBtn').textContent='Add Activity';
+  document.getElementById('cancelEditBtn').classList.add('d-none');
+  clearForm();
+  render();
+}
+
+function clearForm(){
+  areaType.selectedIndex=0;
+  updateAreaDetailField();
+  refreshActivityOptions();
+  activityDetailEl.value='';
+  document.getElementById('workers').value='';
+  quantityEl.value='';
+  unitEl.value='';
+  unitEl.dataset.auto='0';
+  specificationEl.value='';
+  updateMeasurementDefaults();
+  areaDetailExtraInput.value='';
+}
+
+function render(){
+  const list=document.getElementById('activityList');
+  const prev=document.getElementById('reportPreview');
+  list.innerHTML='';
+  prev.innerHTML='';
+
+  if(rows.length===0){
+    list.innerHTML='<div class="empty">No activities added yet.</div>';
+    prev.innerHTML='<div class="empty">Nothing to preview yet.</div>';
+    totals();
+    return;
+  }
+
+  rows.forEach(r=>{
+    const area=areaLabel(r.areaType,r.areaDetail,r.areaDetailExtra);
+    const activity=activityLabel(r.activityType,r.activityDetail);
+
+    const row=document.createElement('div');
+    row.className='act-row'+(r.id===editingId?' editing':'');
+
+    const main=document.createElement('div');
+    main.className='act-main';
+    main.textContent=r.discipline+' — '+r.tower+' / '+r.level+' / '+area;
+
+    const sub=document.createElement('div');
+    sub.className='act-sub';
+    sub.textContent=r.masterClass+': '+activity;
+
+    const nums=document.createElement('div');
+    nums.className='act-nums';
+    nums.textContent=r.quantity+' '+r.unit+' · '+r.specification+' · '+r.workers+' Labours · '+r.mh+' MH';
+
+    const btns=document.createElement('div');
+    btns.className='act-btns';
+
+    const edit=document.createElement('button');
+    edit.className='btn btn-outline-primary';
+    edit.textContent='Edit';
+    edit.onclick=function(){startEdit(r);};
+
+    const dup=document.createElement('button');
+    dup.className='btn btn-outline-secondary';
+    dup.textContent='Duplicate';
+    dup.onclick=function(){
+      const i=rows.indexOf(r);
+      rows.splice(i+1,0,{...r,id:Date.now()+Math.random()});
+      render();
+    };
+
+    const del=document.createElement('button');
+    del.className='btn btn-outline-danger';
+    del.textContent='Delete';
+    del.onclick=function(){
+      const i=rows.indexOf(r);
+      if(i>-1){
+        if(r.id===editingId) exitEdit();
+        rows.splice(i,1);
+        render();
+      }
+    };
+
+    btns.appendChild(edit);btns.appendChild(dup);btns.appendChild(del);
+    row.appendChild(main);row.appendChild(sub);row.appendChild(nums);row.appendChild(btns);
+    list.appendChild(row);
+
+    const p=document.createElement('div');
+    p.className='prev-item';
+    p.textContent=r.discipline+' | '+r.masterClass+' | '+r.tower+' | '+r.level+' | '+area+' | '+activity+' | '+r.quantity+' '+r.unit+' | '+r.specification+' | '+r.workers+' Labours | '+r.mh+' MH';
+    prev.appendChild(p);
+  });
+  if(remarks.value.trim()){
+    const rp=document.createElement('div');
+    rp.className='prev-item';
+    rp.textContent='Remarks | '+remarks.value.trim();
+    prev.appendChild(rp);
+  }
+  totals();
+}
+
+disciplineEl.addEventListener('change', refreshMasterClassOptions);
+masterClassEl.addEventListener('change', refreshActivityOptions);
+activityTypeEl.addEventListener('change', function(){
+  updateActivityDetailField();
+  updateMeasurementDefaults();
+});
+areaType.addEventListener('change', updateAreaDetailField);
+unitEl.addEventListener('change', function(){unitEl.dataset.auto='0';});
+
+document.getElementById('addBtn').addEventListener('click', function(){
+  const discipline=disciplineEl.value;
+  const masterClass=masterClassEl.value;
+  const tower=document.getElementById('tower').value;
+  const level=document.getElementById('level').value;
+  const aType=areaType.value;
+  const aDetail=getAreaDetailValue();
+  const aDetailExtra=getAreaDetailExtraValue();
+  const actType=activityTypeEl.value;
+  const actDetail=activityDetailEl.value.trim();
+  const workers=Number(document.getElementById('workers').value);
+  const quantity=Number(quantityEl.value);
+  const unit=unitEl.value;
+  const specification=specificationEl.value.trim();
+
+  if(!discipline){alert('Please select a Discipline.');return;}
+  if(!masterClass){alert('Please select a Master Class.');return;}
+  if(!tower||!level){alert('Please select Tower and Level.');return;}
+  if(!aType){alert('Please select an Area.');return;}
+  if(AREA_DETAIL_CONFIG[aType]&&!aDetail){
+    alert('Please provide the '+AREA_DETAIL_CONFIG[aType].label+'.');return;
+  }
+  if(AREA_DETAIL_CONFIG[aType]&&AREA_DETAIL_CONFIG[aType].secondary&&AREA_DETAIL_CONFIG[aType].secondary.required&&!aDetailExtra){
+    alert('Please provide the '+AREA_DETAIL_CONFIG[aType].secondary.label+'.');return;
+  }
+  if(!actType){alert('Please select an Activity.');return;}
+  if(actType==='Others'&&!actDetail){alert('Please specify the activity.');return;}
+  if(!(workers>=1)){alert('Please enter at least 1 Labour.');return;}
+  if(!(quantity>0)){alert('Please enter the work quantity.');return;}
+  if(!unit){alert('Please select the work unit.');return;}
+  if(!specification){alert('Please enter the Size / Specification.');return;}
+
+  if(editingId!==null){
+    const r=rows.find(x=>x.id===editingId);
+    if(r){
+      r.discipline=discipline;r.masterClass=masterClass;
+      r.tower=tower;r.level=level;
+      r.areaType=aType;r.areaDetail=aDetail;
+      r.activityType=actType;r.activityDetail=actType==='Others'?actDetail:'';
+      r.workers=workers;r.mh=workers*8;
+    }
+    exitEdit();
+    return;
+  }
+
+  rows.push({
+    id:Date.now()+Math.random(),
+    discipline,masterClass,tower,level,
+    areaType:aType,areaDetail:aDetail,areaDetailExtra:aDetailExtra,
+    activityType:actType,activityDetail:actType==='Others'?actDetail:'',
+    workers,mh:workers*8,quantity,unit,specification
+  });
+  clearForm();
+  render();
+});
+
+document.getElementById('cancelEditBtn').addEventListener('click', exitEdit);
+
+a.addEventListener('input', totals);
+cih.addEventListener('input', save);
+absent.addEventListener('input', save);
+remarks.addEventListener('input', save);
+d.addEventListener('input', save);
+d.addEventListener('change', save);
+f.addEventListener('input', save);
+f.addEventListener('change', save);
+remarks.addEventListener('input', save);
+
+function showActionStatus(message, type){
+  const el=document.getElementById('actionStatus');
+  el.textContent=message;
+  el.className='alert py-2';
+  el.classList.add(type==='danger'?'alert-danger':type==='warning'?'alert-warning':'alert-success');
+  el.classList.remove('d-none');
+}
+
+function hideActionStatus(){
+  document.getElementById('actionStatus').classList.add('d-none');
+}
+
+function updateSubmissionNotice(){
+  const notice=document.getElementById('submissionNotice');
+  if(reportSubmitted){
+    notice.className='alert alert-success py-2';
+    notice.innerHTML='<strong>Submitted:</strong> Thank you for submitting the report. Keep the exported file for your records.';
+  }else if(reportExported){
+    notice.className='alert alert-info py-2';
+    notice.innerHTML='<strong>Ready for submission:</strong> Thank you for exporting the report. Kindly submit/share the report after your final review.';
+  }else{
+    notice.className='alert alert-warning py-2';
+    notice.innerHTML='<strong>Final Review:</strong> Before submission, kindly recheck the report for final review. Please export the report before submitting/sharing it.';
+  }
+}
+
+function markExported(){
+  reportExported=true;
+  reportSubmitted=false;
+  updateSubmissionNotice();
+  save();
+}
+
+function markSubmitted(){
+  reportSubmitted=true;
+  updateSubmissionNotice();
+  save();
+}
+
+function silentSync(){
+  if(SHEET_WEBAPP_URL.indexOf('PASTE_YOUR')===0) return;
+  if(rows.length===0) return;
+  const payload={
+    project:PROJECT_CODE,date:d.value,foreman:f.value,
+    foremanName:currentForemanName,foremanPin:currentForemanPin,
+    attendance:a.value,chargeInHand:cih.value,absent:absent.value,
+    rows:rows.map(r=>({
+      ...r,
+      area:areaLabel(r.areaType,r.areaDetail,r.areaDetailExtra),
+      activity:activityLabel(r.activityType,r.activityDetail)
+    }))
+  };
+  try{
+    fetch(SHEET_WEBAPP_URL,{
+      method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
+    }).catch(function(){});
+  }catch(e){}
+}
+
+document.getElementById('shareBtn').addEventListener('click', async function(){
+  if(rows.length===0){alert('Add at least one activity before submitting.');return;}
+  if(!reportExported){
+    showActionStatus('Please export the report first, then submit/share it. Before submission, kindly recheck the report for final review.','warning');
+    document.getElementById('exportBtn').focus();
+    return;
+  }
+  const confirmed=confirm('Before submission, kindly recheck the report for final review.\n\nHave you checked the activities, manpower, Charge in Hand, Total Absent and Remarks?');
+  if(!confirmed) return;
+
+  silentSync();
+  let blob;
+  try{
+    blob=buildWorkbookBlob();
+  }catch(err){
+    alert("Couldn't build the report file. Try reloading the page — if this keeps happening, tell your manager.");
+    return;
+  }
+  const filename=xlsxFilename();
+  let file=null;
+  try{file=new File([blob],filename,{type:blob.type});}catch(e){file=null;}
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file],title:PROJECT_CODE+' Manpower Report',text:PROJECT_CODE+' Manpower Report - '+d.value});
+      markSubmitted();
+      showActionStatus('Thank you for submitting/sharing the report.','success');
+    }catch(err){
+      showActionStatus('Submission cancelled. Please review the report and submit/share it when ready.','warning');
+    }
+  }else{
+    const link=document.createElement('a');
+    link.href=URL.createObjectURL(blob);
+    link.download=filename;
+    link.click();
+    showActionStatus('Sharing is not supported on this browser. The report was downloaded again; please submit/share the exported file manually.','warning');
+  }
+});
+
+document.getElementById('exportBtn').addEventListener('click', function(){
+  if(rows.length===0){alert('Add at least one activity before exporting.');return;}
+  silentSync();
+  let blob;
+  try{
+    blob=buildWorkbookBlob();
+  }catch(err){
+    alert("Couldn't build the report file. Try reloading the page — if this keeps happening, tell your manager.");
+    return;
+  }
+  const link=document.createElement('a');
+  link.href=URL.createObjectURL(blob);
+  link.download=xlsxFilename();
+  link.click();
+  markExported();
+  showActionStatus('Thank you for exporting the report. Kindly submit/share the report after your final review.','success');
+});
+
+document.getElementById('clearBtn').addEventListener('click', function(){
+  if(confirm("This will permanently delete today's draft (all details and activities). Continue?")){
+    reportExported=false;
+    reportSubmitted=false;
+    if(hasStorage){try{localStorage.removeItem(KEY);}catch(e){}}
+    location.reload();
+  }
+});
+
+function initApp(){
+  document.getElementById('loginGate').style.display='none';
+  document.getElementById('appContainer').style.display='';
+  f.value=currentForemanName;
+
+  if(hasStorage){
+    try{
+      const raw=localStorage.getItem(KEY);
+      if(raw){
+        const draft=JSON.parse(raw);
+        const draftForeman=String(draft.foreman||'').trim().toLowerCase();
+        const sameForeman=!draftForeman||draftForeman===currentForemanName.trim().toLowerCase();
+        if(sameForeman){
+          (draft.rows||[]).forEach(r=>{
+            // migrate rows saved before the Area Type split
+            if(r.areaType===undefined){
+              r.areaType='Others';
+              r.areaDetail=r.area||'';
+            }
+            if(r.areaDetailExtra===undefined){
+              r.areaDetailExtra='';
+              // Preserve older Flat rows that previously stored the flat number as areaDetail.
+              if(r.areaType==='Flat' && /^\\d+[A-Za-z]?$/.test(String(r.areaDetail||'').trim())){
+                r.areaDetailExtra=String(r.areaDetail).trim();
+                r.areaDetail='Other';
+              }
+            }
+            if(r.quantity===undefined) r.quantity=1;
+            if(r.unit===undefined) r.unit='Lots';
+            if(r.specification===undefined) r.specification='N/A';
+            // migrate rows saved before Master Class / Activity dropdown existed
+            if(r.masterClass===undefined){
+              r.masterClass='Unclassified — please Edit and reclassify';
+              r.activityType='Others';
+              r.activityDetail=r.activity||'';
+            }
+            rows.push(r);
+          });
+          d.value=draft.date||d.value;
+          a.value=draft.attendance||'';
+          cih.value=draft.cih||'';
+          absent.value=draft.absent||'';
+          remarks.value=draft.remarks||'';
+          reportExported=!!draft.reportExported;
+          reportSubmitted=!!draft.reportSubmitted;
+        }
+      }
+    }catch(e){}
+  }
+  refreshMasterClassOptions();
+  updateAreaDetailField();
+  updateMeasurementDefaults();
+  updateSubmissionNotice();
+  render();
+}
+
+// JSONP login check — Apps Script's cross-origin fetch responses are
+// unreliable to read directly, so the PIN check loads a <script> tag
+// instead, which isn't subject to that restriction.
+let jsonpCounter=0;
+function jsonpLogin(name,pin){
+  return new Promise(function(resolve){
+    const cbName='__loginCb'+(jsonpCounter++);
+    const script=document.createElement('script');
+    let settled=false;
+    function cleanup(){
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+    const timer=setTimeout(function(){
+      if(settled) return;
+      settled=true;cleanup();resolve({valid:false,error:true});
+    },8000);
+    window[cbName]=function(result){
+      if(settled) return;
+      settled=true;clearTimeout(timer);cleanup();resolve(result);
+    };
+    script.onerror=function(){
+      if(settled) return;
+      settled=true;clearTimeout(timer);cleanup();resolve({valid:false,error:true});
+    };
+    script.src=SHEET_WEBAPP_URL+'?action=login&callback='+encodeURIComponent(cbName)+
+      '&name='+encodeURIComponent(name)+'&pin='+encodeURIComponent(pin);
+    document.head.appendChild(script);
+  });
+}
+
+document.getElementById('loginBtn').addEventListener('click', async function(){
+  const name=document.getElementById('loginName').value.trim();
+  const pin=document.getElementById('loginPin').value.trim();
+  const errEl=document.getElementById('loginError');
+  errEl.style.display='none';
+
+  if(!name||!pin){
+    errEl.textContent='Please enter your name and PIN.';
+    errEl.style.display='';
+    return;
+  }
+  if(SHEET_WEBAPP_URL.indexOf('PASTE_YOUR')===0){
+    errEl.textContent="Sign-in isn't connected yet. Contact your manager.";
+    errEl.style.display='';
+    return;
+  }
+
+  const btn=this;const t=btn.textContent;
+  btn.disabled=true;btn.textContent='Checking...';
+  const result=await jsonpLogin(name,pin);
+  btn.disabled=false;btn.textContent=t;
+
+  if(result&&result.valid){
+    currentForemanName=name;
+    currentForemanPin=pin;
+    if(hasSession){
+      try{sessionStorage.setItem('J82_AUTH',JSON.stringify({name:name,pin:pin}));}catch(e){}
+    }
+    initApp();
+  }else{
+    errEl.textContent=(result&&result.error)
+      ? "Couldn't reach the server. Check your connection and try again."
+      : 'Name or PIN not recognized. Check with your manager.';
+    errEl.style.display='';
+  }
+});
+
+document.getElementById('loginPin').addEventListener('keydown', function(ev){
+  if(ev.key==='Enter') document.getElementById('loginBtn').click();
+});
+
+function trySavedSession(){
+  if(!hasSession) return false;
+  try{
+    const raw=sessionStorage.getItem('J82_AUTH');
+    if(!raw) return false;
+    const auth=JSON.parse(raw);
+    if(auth&&auth.name&&auth.pin){
+      currentForemanName=auth.name;
+      currentForemanPin=auth.pin;
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+if(trySavedSession()){
+  initApp();
+}
+</script>
+</body>
+</html>
