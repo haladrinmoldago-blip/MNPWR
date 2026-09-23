@@ -32,6 +32,42 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
 .prev-item:last-child{border-bottom:none}
 .empty{color:#adb5bd;font-size:13px;font-style:italic}
 .footer{text-align:center;color:#adb5bd;font-size:12px;margin-top:20px}
+  .choice-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+
+.choice-btn{
+  width:100%;
+  text-align:left;
+  padding:10px 12px;
+  border:1px solid #ced4da;
+  background:#fff;
+  color:#212529;
+  border-radius:4px;
+  font-size:14px;
+  line-height:1.25;
+  cursor:pointer;
+}
+
+.choice-btn:hover{
+  background:#f8f9fa;
+  border-color:#86b7fe;
+}
+
+.choice-btn.selected{
+  background:#e9f2ff;
+  border-color:#0d6efd;
+  color:#0b5ed7;
+  font-weight:600;
+}
+
+@media(max-width:600px){
+  .choice-grid{
+    grid-template-columns:1fr;
+  }
+}
 #loginGate{position:fixed;inset:0;background:#f7f7f8;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
 #loginGate .box{background:#fff;border:1px solid #dee2e6;border-radius:6px;padding:24px;max-width:340px;width:100%}
 #loginGate h2{font-size:16px;font-weight:600;margin:0 0 4px;text-transform:none;letter-spacing:normal}
@@ -95,12 +131,13 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
           <option>Modular</option>
         </select>
       </div>
-      <div class="col-md-4">
-        <label class="form-label" for="masterClass">Master Class</label>
-        <select id="masterClass" class="form-select">
-          <option value="" disabled selected>Select Discipline first</option>
-        </select>
-      </div>
+       <div class="col-12">
+           <label class="form-label">Master Class</label>
+           <div id="masterClassButtons" class="choice-grid">
+           <div class="empty">Select Discipline first</div>
+     </div>
+     <input type="hidden" id="masterClass">
+    </div>
       <div class="col-md-4">
         <label class="form-label" for="tower">Tower</label>
         <select id="tower" class="form-select">
@@ -145,12 +182,13 @@ body{background:#f7f7f8;color:#212529;font-family:Segoe UI,Arial,sans-serif;padd
           <input id="areaDetailExtra" class="form-control" placeholder="">
         </div>
       </div>
-      <div class="col-md-4">
-        <label class="form-label" for="activityType">Activity</label>
-        <select id="activityType" class="form-select">
-          <option value="" disabled selected>Select Master Class first</option>
-        </select>
-      </div>
+          <div class="col-12">
+             <label class="form-label">Activity</label>
+            <div id="activityTypeButtons" class="choice-grid">
+            <div class="empty">Select Master Class first</div>
+          </div>
+        <input type="hidden" id="activityType">
+     </div>
       <div class="col-md-4" id="activityDetailWrap" style="display:none">
         <label class="form-label" for="activityDetail">Specify Activity</label>
         <input id="activityDetail" class="form-control" placeholder="Type the activity">
@@ -317,6 +355,8 @@ const remarks=document.getElementById('remarks');
 const disciplineEl=document.getElementById('discipline');
 const masterClassEl=document.getElementById('masterClass');
 const activityTypeEl=document.getElementById('activityType');
+const masterClassButtons=document.getElementById('masterClassButtons');
+const activityTypeButtons=document.getElementById('activityTypeButtons');
 const activityDetailWrap=document.getElementById('activityDetailWrap');
 const activityDetailEl=document.getElementById('activityDetail');
 const areaType=document.getElementById('areaType');
@@ -342,7 +382,7 @@ const AREA_DETAIL_CONFIG={
   'Flat':{
     type:'select',
     label:'Flat Type',
-    options:['Studio','1BHK','2BHK','3BHK','4BHK','5BHK','Duplex','Penthouse','Other'],
+    options:['1BHK','2BHK','Other'],
     secondary:{label:'Flat Number',placeholder:'e.g. 205',required:true}
   },
   'Staircase':{
@@ -389,22 +429,127 @@ function populateSelect(sel, items, placeholder){
   });
 }
 
+
+function escapeHtml(value){
+return String(value ?? '').replace(/[&<>"']/g,function(character){
+return {
+'&':'&amp;',
+'<':'&lt;',
+'>':'&gt;',
+'"':'&quot;',
+"'":'&#39;'
+}[character];
+});
+}
+  
 function refreshMasterClassOptions(){
   const disc=disciplineEl.value;
-  const classes=(disc&&MASTER_DATA[disc])?Object.keys(MASTER_DATA[disc]):[];
-  populateSelect(masterClassEl, classes, disc?'Select':'Select Discipline first');
+  const classes=(disc && MASTER_DATA[disc])
+    ? Object.keys(MASTER_DATA[disc])
+    : [];
+
+  masterClassEl.value='';
+  activityTypeEl.value='';
+
+  if(classes.length===0){
+    masterClassButtons.innerHTML=
+      '<div class="empty">Select Discipline first</div>';
+
+    activityTypeButtons.innerHTML=
+      '<div class="empty">Select Master Class first</div>';
+
+    updateActivityDetailField();
+    return;
+  }
+
+  masterClassButtons.innerHTML=classes.map(function(name){
+    return `
+      <button
+        type="button"
+        class="choice-btn"
+        data-master-class="${escapeHtml(name)}">
+        ${escapeHtml(name)}
+      </button>
+    `;
+  }).join('');
+
+  masterClassButtons
+    .querySelectorAll('[data-master-class]')
+    .forEach(function(button){
+      button.addEventListener('click',function(){
+        masterClassEl.value=this.dataset.masterClass;
+        activityTypeEl.value='';
+
+        masterClassButtons
+          .querySelectorAll('[data-master-class]')
+          .forEach(function(item){
+            item.classList.remove('selected');
+          });
+
+        this.classList.add('selected');
+        refreshActivityOptions();
+      });
+    });
+
   refreshActivityOptions();
 }
 
 function refreshActivityOptions(){
   const disc=disciplineEl.value;
   const mc=masterClassEl.value;
-  const base=(disc&&mc&&MASTER_DATA[disc]&&MASTER_DATA[disc][mc])?MASTER_DATA[disc][mc].slice():[];
-  if(disc&&mc) base.push('Others');
-  populateSelect(activityTypeEl, base, mc?'Select':'Select Master Class first');
+
+  const activities=(
+    disc &&
+    mc &&
+    MASTER_DATA[disc] &&
+    MASTER_DATA[disc][mc]
+  )
+    ? MASTER_DATA[disc][mc].slice()
+    : [];
+
+  activityTypeEl.value='';
+
+  if(activities.length===0){
+    activityTypeButtons.innerHTML=
+      '<div class="empty">Select Master Class first</div>';
+
+    updateActivityDetailField();
+    return;
+  }
+
+  activities.push('Others');
+
+  activityTypeButtons.innerHTML=activities.map(function(name){
+    return `
+      <button
+        type="button"
+        class="choice-btn"
+        data-activity-type="${escapeHtml(name)}">
+        ${escapeHtml(name)}
+      </button>
+    `;
+  }).join('');
+
+  activityTypeButtons
+    .querySelectorAll('[data-activity-type]')
+    .forEach(function(button){
+      button.addEventListener('click',function(){
+        activityTypeEl.value=this.dataset.activityType;
+
+        activityTypeButtons
+          .querySelectorAll('[data-activity-type]')
+          .forEach(function(item){
+            item.classList.remove('selected');
+          });
+
+        this.classList.add('selected');
+        updateActivityDetailField();
+        updateMeasurementDefaults();
+      });
+    });
+
   updateActivityDetailField();
 }
-
 function updateActivityDetailField(){
   if(activityTypeEl.value==='Others'){
     activityDetailWrap.style.display='';
@@ -654,12 +799,31 @@ function startEdit(r){
   editingId=r.id;
 
   disciplineEl.value=r.discipline;
-  refreshMasterClassOptions();
-  masterClassEl.value=r.masterClass;
-  refreshActivityOptions();
-  activityTypeEl.value=r.activityType;
-  updateActivityDetailField();
-  activityDetailEl.value=r.activityDetail||'';
+refreshMasterClassOptions();
+ 
+masterClassEl.value=r.masterClass;
+ 
+masterClassButtons
+.querySelectorAll('[data-master-class]')
+.forEach(function(button){
+button.classList.toggle(
+'selected',
+button.dataset.masterClass===r.masterClass
+);
+});
+ 
+refreshActivityOptions();
+ 
+activityTypeEl.value=r.activityType;
+ 
+activityTypeButtons
+.querySelectorAll('[data-activity-type]')
+.forEach(function(button){
+button.classList.toggle(
+'selected',
+button.dataset.activityType===r.activityType
+);
+});;
 
   document.getElementById('tower').value=r.tower;
   document.getElementById('level').value=r.level;
@@ -784,11 +948,6 @@ function render(){
 }
 
 disciplineEl.addEventListener('change', refreshMasterClassOptions);
-masterClassEl.addEventListener('change', refreshActivityOptions);
-activityTypeEl.addEventListener('change', function(){
-  updateActivityDetailField();
-  updateMeasurementDefaults();
-});
 areaType.addEventListener('change', updateAreaDetailField);
 unitEl.addEventListener('change', function(){unitEl.dataset.auto='0';});
 
