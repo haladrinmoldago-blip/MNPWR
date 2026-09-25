@@ -236,6 +236,12 @@ let currentUser='';
 let allowedDisciplines=['Electrical'];
 let selectedDiscipline='Electrical';
 
+// Persisted dynamic location details.
+// areaType = Flat Type / Area Type / Facade / Service Room, etc.
+// areaReference = Flat Number for Flat locations.
+let draftAreaType='';
+let draftAreaReference='';
+
 function disciplineAccessFor(name){
   const n=String(name||'').toUpperCase();
   if(n.includes('ELEC')) return ['Electrical'];
@@ -250,6 +256,36 @@ const levelEl=document.getElementById('level');
 const areaEl=document.getElementById('area');
 const plannedManpowerEl=document.getElementById('plannedManpower');
 const remarksEl=document.getElementById('unplannedRemarks');
+
+// Location controls.
+// Dynamic Area fields are delegated because renderAreaDetails() recreates them.
+towerEl.addEventListener('change', function(){ save(); });
+
+levelEl.addEventListener('change', function(){
+  if(areaEl.value==='Flat') updateFlatControl();
+  save();
+});
+
+areaEl.addEventListener('change', function(){
+  selectedMaster='';
+  selectedActivity='';
+  document.getElementById('activityPanel').classList.add('d-none');
+  document.getElementById('plannedManpowerPanel').classList.add('d-none');
+  renderAreaDetails();
+  renderMasterButtons();
+  save();
+});
+
+document.getElementById('areaDetails').addEventListener('change', function(ev){
+  if(ev.target && ev.target.matches('select,input,textarea')) save();
+});
+document.getElementById('areaDetails').addEventListener('input', function(ev){
+  if(ev.target && ev.target.matches('input,textarea')) save();
+});
+
+document.getElementById('project').addEventListener('change', save);
+d.addEventListener('change', save);
+remarksEl.addEventListener('input', save);
 
 d.value=new Date().toISOString().split('T')[0];
 
@@ -267,12 +303,15 @@ if(!hasStorage)document.getElementById('storageNotice').classList.remove('d-none
 function save(){
   if(!hasStorage)return;
   try{
+    const detail=areaDetails();
     localStorage.setItem(KEY,JSON.stringify({
       user:currentUser,
       date:d.value,
       tower:towerEl.value,
       level:levelEl.value,
       area:areaEl.value,
+      areaType:detail.type||'',
+      areaReference:detail.ref||'',
       remarks:remarksEl.value,
       rows
     }));
@@ -330,9 +369,34 @@ function locationLabel(){
 }
 
 function locationReady(){
-  if(!towerEl.value||!levelEl.value||!areaEl.value)return false;
-  if(areaEl.value==='Flat')return flatValid();
-  return !!areaDetails().type;
+  return !locationValidationMessage();
+}
+
+function locationValidationMessage(){
+  if(!towerEl.value)return 'Select Tower.';
+  if(!levelEl.value)return 'Select Level.';
+  if(!areaEl.value)return 'Select Area.';
+
+  if(areaEl.value==='Flat'){
+    const flatType=document.getElementById('flatType')?.value||'';
+    const flatNo=document.getElementById('flatNumber')?.value.trim()||'';
+
+    if(!flatType)return 'Select Flat Type.';
+    if(levelEl.value==='RF')return '';
+
+    if(!flatNo){
+      return 'Enter Flat Number for '+levelEl.value+' (example: '+levelPrefix(levelEl.value)+'01).';
+    }
+    if(!flatValid()){
+      return 'Flat Number '+flatNo+' does not match '+levelEl.value+' numbering. Example: '+levelPrefix(levelEl.value)+'01.';
+    }
+    return '';
+  }
+
+  if(!areaDetails().type){
+    return 'Complete the Area Type / Mention field for '+areaEl.value+'.';
+  }
+  return '';
 }
 
 function renderAreaDetails(){
@@ -502,8 +566,9 @@ function renderActivityButtons(){
 }
 
 function openPlannedManpower(){
-  if(!locationReady()){
-    alert('Complete Tower, Level and Area details before selecting an activity.');
+  const locationError=locationValidationMessage();
+  if(locationError){
+    alert(locationError);
     return;
   }
   document.getElementById('plannedManpowerPanel').classList.remove('d-none');
@@ -515,8 +580,9 @@ function openPlannedManpower(){
 }
 
 function addPlan(){
-  if(!locationReady()){
-    alert('Complete Tower, Level and Area details first.');
+  const locationError=locationValidationMessage();
+  if(locationError){
+    alert(locationError);
     return;
   }
   if(!selectedMaster||!selectedActivity){
@@ -534,6 +600,7 @@ function addPlan(){
     project:document.getElementById('project').value,
     date:d.value,
     planner:currentUser,
+    discipline:selectedDiscipline,
     tower:towerEl.value,
     level:levelEl.value,
     area:areaEl.value,
@@ -554,6 +621,33 @@ function addPlan(){
   save();
 }
 
+// ============================================================
+// FIX: DIRECT PLANNER BUTTON BINDINGS
+// V15 contains the Add to Plan / Cancel buttons and addPlan(),
+// but the buttons were never connected to their handlers.
+// Bind them directly here; this does not alter login or backend logic.
+// ============================================================
+document.getElementById('addPlanBtn').addEventListener('click', function(ev){
+  ev.preventDefault();
+  addPlan();
+});
+
+document.getElementById('cancelPlanBtn').addEventListener('click', function(ev){
+  ev.preventDefault();
+  selectedActivity='';
+  plannedManpowerEl.value='';
+  document.getElementById('plannedManpowerPanel').classList.add('d-none');
+  renderActivityButtons();
+});
+
+plannedManpowerEl.addEventListener('keydown', function(ev){
+  if(ev.key==='Enter'){
+    ev.preventDefault();
+    addPlan();
+  }
+});
+
+
 function renderLists(){
   const plan=document.getElementById('planList');
   document.getElementById('planCount').textContent=rows.length;
@@ -563,7 +657,7 @@ function renderLists(){
     plan.innerHTML=rows.map((r,i)=>`
       <div class="plan-row">
         <div class="title">${i+1}. ${escapeHtml(r.activity)}</div>
-        <div class="meta">${escapeHtml(r.tower)} / ${escapeHtml(r.level)} / ${escapeHtml(r.location)} · ${escapeHtml(r.masterClass)}</div>
+        <div class="meta">${escapeHtml(r.discipline||'')} · ${escapeHtml(r.tower)} / ${escapeHtml(r.level)} / ${escapeHtml(r.location)} · ${escapeHtml(r.masterClass)}</div>
         <div class="meta">Planned manpower: <strong>${r.plannedManpower}</strong></div>
         <div class="mt-2"><button class="btn btn-sm btn-outline-danger" data-remove="${r.id}">Remove</button></div>
       </div>`).join('');
@@ -592,7 +686,7 @@ function renderActuals(){
   list.innerHTML=rows.map((r,i)=>`
     <div class="plan-row">
       <div class="title">${i+1}. ${escapeHtml(r.activity)}</div>
-      <div class="meta">${escapeHtml(r.tower)} / ${escapeHtml(r.level)} / ${escapeHtml(r.location)} · Planned: <strong>${r.plannedManpower}</strong></div>
+      <div class="meta">${escapeHtml(r.discipline||'')} · ${escapeHtml(r.tower)} / ${escapeHtml(r.level)} / ${escapeHtml(r.location)} · Planned: <strong>${r.plannedManpower}</strong></div>
       <div class="mt-2" style="max-width:180px">
         <label class="form-label" for="actual_${r.id}">Actual Manpower</label>
         <input id="actual_${r.id}" data-actual="${r.id}" class="form-control" type="number" min="0"
@@ -628,6 +722,43 @@ function decodePayload(token){
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
+function silentPost(payload){
+  if(SHEET_WEBAPP_URL.indexOf('PASTE_YOUR')===0) return;
+  try{
+    fetch(SHEET_WEBAPP_URL,{
+      method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
+    }).catch(function(){});
+  }catch(e){}
+}
+
+function syncSendPlan(){
+  if(rows.length===0) return;
+  silentPost({
+    action:'sendPlan',
+    rows:rows.map(r=>({
+      id:r.id,project:r.project,date:r.date,planner:r.planner,
+      discipline:r.discipline||'',tower:r.tower,level:r.level,area:r.area,
+      areaType:r.areaType||'',areaReference:r.areaReference||'',location:r.location,
+      masterClass:r.masterClass,activity:r.activity,plannedManpower:r.plannedManpower
+    }))
+  });
+}
+
+function syncSubmitActuals(){
+  if(rows.length===0) return;
+  silentPost({
+    action:'submitActuals',
+    project:document.getElementById('project').value,
+    planner:currentUser,
+    foremanName:document.getElementById('foremanName')?.value||'',
+    actualDate:document.getElementById('actualDate')?.value||d.value,
+    unplannedRemarks:document.getElementById('unplannedRemarks')?.value||'',
+    rows:rows.map(r=>({id:r.id,actualManpower:r.actualManpower===''?'':Number(r.actualManpower)}))
+  });
+}
+
 function foremanLink(){
   const payload={
     v:1,
@@ -637,6 +768,7 @@ function foremanLink(){
     planner:currentUser,
     rows:rows.map(r=>({
       id:r.id,project:r.project,date:r.date,planner:r.planner,
+      discipline:r.discipline||'',
       tower:r.tower,level:r.level,area:r.area,areaType:r.areaType,
       areaReference:r.areaReference,location:r.location,
       masterClass:r.masterClass,activity:r.activity,
@@ -651,6 +783,7 @@ function sendToForeman(){
     alert('Add at least one planned activity first.');
     return;
   }
+  syncSendPlan();
   const link=foremanLink();
   const message=
     'J82 Electrical Manpower Plan - '+d.value+'\n'+
@@ -666,18 +799,24 @@ function exportExcel(){
     alert('There are no activities to export.');
     return;
   }
+  if(reportMode==='foreman'){
+    syncSubmitActuals();
+  }else{
+    syncSendPlan();
+  }
   if(typeof XLSX==='undefined'){
     alert('Excel export library could not load. Check your internet connection.');
     return;
   }
   const header=[
-    'Project','Date','Planner','Foreman','Tower','Level','Area','Area Type',
+    'Project','Date','Planner','Foreman','Discipline','Tower','Level','Area','Area Type',
     'Area Reference','Location','Master Activity','Activity',
     'Planned Manpower','Actual Manpower','Variance'
   ];
   const data=rows.map(r=>[
     r.project||'J82',reportMode==='foreman'?(document.getElementById('actualDate').value||r.date):r.date,
     r.planner||currentUser,document.getElementById('foremanName')?.value||'',
+    r.discipline||'',
     r.tower,r.level,r.area,r.areaType||'',r.areaReference||'',r.location,
     r.masterClass,r.activity,Number(r.plannedManpower)||0,
     r.actualManpower===''?'':Number(r.actualManpower),
@@ -695,7 +834,7 @@ function exportExcel(){
     ['Unplanned Activity Remarks',remarksEl?.value||'']
   ];
   const ws=XLSX.utils.aoa_to_sheet(rowsOut);
-  ws['!cols']=[{wch:12},{wch:12},{wch:22},{wch:20},{wch:11},{wch:9},
+  ws['!cols']=[{wch:12},{wch:12},{wch:22},{wch:20},{wch:14},{wch:11},{wch:9},
     {wch:16},{wch:18},{wch:18},{wch:30},{wch:36},{wch:48},
     {wch:18},{wch:18},{wch:12}];
   const wb=XLSX.utils.book_new();
@@ -764,6 +903,7 @@ function initForemanMode(payload){
     project:r.project||payload.project||'J82',
     date:r.date||payload.date||d.value,
     planner:r.planner||payload.planner||'',
+    discipline:r.discipline||'',
     tower:r.tower||'',
     level:r.level||'',
     area:r.area||'',
@@ -803,10 +943,27 @@ function loadPlannerDraft(){
       towerEl.value=draft.tower||'';
       levelEl.value=draft.level||'';
       areaEl.value=draft.area||'';
+      draftAreaType=draft.areaType||'';
+      draftAreaReference=draft.areaReference||'';
       remarksEl.value=draft.remarks||'';
       (draft.rows||[]).forEach(r=>rows.push(r));
     }
   }catch(e){}
+}
+
+function restoreDraftAreaDetails(){
+  if(!areaEl.value)return;
+
+  if(areaEl.value==='Flat'){
+    const flatType=document.getElementById('flatType');
+    const flatNumber=document.getElementById('flatNumber');
+    if(flatType)flatType.value=draftAreaType||'';
+    if(flatNumber)flatNumber.value=draftAreaReference||'';
+    updateFlatControl();
+  }else{
+    const areaSpecific=document.getElementById('areaSpecific');
+    if(areaSpecific)areaSpecific.value=draftAreaType||'';
+  }
 }
 
 function initApp(){
@@ -821,9 +978,14 @@ function initApp(){
 
   userEl.value=currentForemanName||currentUser||'';
   currentUser=currentForemanName||currentUser||'';
+  allowedDisciplines=disciplineAccessFor(currentUser);
+  selectedDiscipline=allowedDisciplines.length===1?allowedDisciplines[0]:'';
   loadPlannerDraft();
   initPlannerMode();
   renderAreaDetails();
+  restoreDraftAreaDetails();
+  save();
+  renderDisciplineButtons();
   renderMasterButtons();
   renderLists();
 }
